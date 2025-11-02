@@ -1,0 +1,23 @@
+common --compilation_mode=opt
+common --dynamic_mode=off
+common --force_pic
+common --strip=never
+#common --cxxopt=-std=c++20
+#common --custom_malloc=@tcmalloc//tcmalloc
+#common --define=absl=1
+#common --define=pfm=1
+
+# bazel run --config=asan //:tests
+common:asan --features=asan
+
+# bazel build --config=clang-format -k //...
+common:clang-format --aspects=@bazel_clang_format//:defs.bzl%check_aspect
+common:clang-format --output_groups=report
+common:clang-format --@bazel_clang_format//:config=//:clang_format_config
+common:clang-format --@bazel_clang_format//:binary=@llvm_toolchain//:clang-format
+
+# bazel build --config=clang-tidy -k //...
+common:clang-tidy --aspects=@bazel_clang_tidy//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
+common:clang-tidy --output_groups=report
+common:clang-tidy --@bazel_clang_tidy//:clang_tidy_config=//:clang_tidy_config
+common:clang-tidy --@bazel_clang_tidy//:clang_tidy_executable=@llvm_toolchain//:clang-tidy

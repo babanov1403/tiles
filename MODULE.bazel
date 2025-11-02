@@ -1,0 +1,69 @@
+"""
+bazel project template
+"""
+
+module(name = "project-template", version = "0.0.1")
+
+bazel_dep(name = "abseil-cpp", version = "20250814.1")
+bazel_dep(name = "google_benchmark", version = "1.9.4", dev_dependency = True)
+bazel_dep(name = "googletest", version = "1.17.0.bcr.1", dev_dependency = True)
+bazel_dep(name = "rules_cc", version = "0.2.13")
+
+################################################################################
+# toolchains
+################################################################################
+
+# https://github.com/bazel-contrib/toolchains_llvm/blob/master/toolchain/internal/llvm_distributions.bzl
+bazel_dep(name = "toolchains_llvm", version = "1.5.0", dev_dependency = True)
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+llvm.toolchain(llvm_version = "18.1.8")
+use_repo(llvm, "llvm_toolchain")
+register_toolchains("@llvm_toolchain//:all")
+
+# bazel_dep(name = "hermetic_cc_toolchain", version = "4.0.1", dev_dependency = True)
+# toolchains = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains")
+# use_repo(toolchains, "zig_sdk")
+# register_toolchains("@zig_sdk//toolchain:linux_amd64_musl")
+
+# bazel_dep(name = "tcmalloc", version = "0.0.0-20250927-12f2552", dev_dependency = True)
+# bazel_dep(name = "libpfm", version = "4.11.0.bcr.1", dev_dependency = True)
+
+################################################################################
+# development tools
+################################################################################
+
+# bazel build --config=clang-tidy -k //...
+bazel_dep(name = "bazel_clang_tidy", dev_dependency = True)
+archive_override(
+    module_name = "bazel_clang_tidy",
+    integrity = "sha256-I/sLN+QpoQYTn8odPPkNe5L5xZUztq2S66aEH3APglc=",
+    strip_prefix = "bazel_clang_tidy-496018e020cf0a7d813a2b5a9d246ec55340a7ed",
+    urls = ["https://github.com/erenon/bazel_clang_tidy/archive/496018e020cf0a7d813a2b5a9d246ec55340a7ed.zip"],
+)
+
+# bazel build --config=clang-format -k //...
+bazel_dep(name = "bazel_clang_format", dev_dependency = True)
+archive_override(
+    module_name = "bazel_clang_format",
+    integrity = "sha256-SPtbXGA09Rqpe4dQF9zNiJPhzwKmcniYlWaQU+r/wCo=",
+    strip_prefix = "bazel_clang_format-af6c342dc592ad4f1af76d0260aac90d5c9b426f",
+    urls = ["https://github.com/oliverlee/bazel_clang_format/archive/af6c342dc592ad4f1af76d0260aac90d5c9b426f.zip"],
+)
+
+# bazel run @hedron_compile_commands//:refresh_all
+# bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+# archive_override(
+#     module_name = "hedron_compile_commands",
+#     integrity = "sha256-7B5Bk1jrI9rqsN0CBt/JMDFrrJ3pQtlOuCAZ9AICKEc=",
+#     strip_prefix = "bazel-compile-commands-extractor-abb61a688167623088f8768cc9264798df6a9d10",
+#     urls = ["https://github.com/hedronvision/bazel-compile-commands-extractor/archive/abb61a688167623088f8768cc9264798df6a9d10.zip"],
+# )
+
+# bazel run @bazel-compile-commands//bcc:bazel-compile-commands-bin
+# bazel_dep(name = "bazel-compile-commands", dev_dependency = True)
+# archive_override(
+#     module_name = "bazel-compile-commands",
+#     integrity = "sha256-u9ILT0nVgi3UkvdV7ziXJw/pH+IxIbn14MhPEItMDbY=",
+#     strip_prefix = "bazel-compile-commands-2653397702500aef46ffbcc894e64e3e264294ac",
+#     urls = ["https://github.com/kiron1/bazel-compile-commands/archive/2653397702500aef46ffbcc894e64e3e264294ac.zip"],
+# )

@@ -1,0 +1,69 @@
+# based on: https://chromium.googlesource.com/chromium/src/+/main/.clang-tidy
+---
+  Checks:      '-*,
+                abseil-*,
+                bugprone-argument-comment,
+                bugprone-assert-side-effect,
+                bugprone-bool-pointer-implicit-conversion,
+                bugprone-dangling-handle,
+                bugprone-forward-declaration-namespace,
+                bugprone-inaccurate-erase,
+                bugprone-redundant-branch-condition,
+                bugprone-string-constructor,
+                bugprone-string-integer-assignment,
+                bugprone-suspicious-memset-usage,
+                bugprone-suspicious-realloc-usage,
+                bugprone-terminating-continue,
+                bugprone-undefined-memory-manipulation,
+                bugprone-unique-ptr-array-mismatch,
+                bugprone-unused-raii,
+                bugprone-use-after-move,
+                bugprone-virtual-near-miss,
+                clang-*,
+                google-*,
+                misc-definitions-in-headers,
+                misc-misleading-identifier,
+                modernize-avoid-bind,
+                modernize-concat-nested-namespaces,
+                modernize-loop-convert,
+                modernize-make-shared,
+                modernize-make-unique,
+                modernize-redundant-void-arg,
+                modernize-replace-random-shuffle,
+                modernize-shrink-to-fit,
+                modernize-use-bool-literals,
+                modernize-use-default-member-init,
+                modernize-use-emplace,
+                modernize-use-equals-default,
+                modernize-use-equals-delete,
+                modernize-use-noexcept,
+                modernize-use-nullptr,
+                modernize-use-override,
+                modernize-use-transparent-functors,
+                modernize-use-using,
+                performance-for-range-copy,
+                performance-implicit-conversion-in-loop,
+                performance-move-const-arg,
+                performance-move-constructor-init,
+                performance-no-automatic-move,
+                readability-avoid-const-params-in-decls,
+                readability-const-return-type,
+                readability-inconsistent-declaration-parameter-name,
+                readability-make-member-function-const,
+                readability-redundant-declaration,
+                readability-redundant-member-init,
+                readability-static-definition-in-anonymous-namespace'
+  CheckOptions:
+    - key:      bugprone-assert-side-effect.AssertMacros
+      value:    assert,DCHECK
+    - key:      bugprone-dangling-handle.HandleClasses
+      value:    ::std::basic_string_view;::std::span;::absl::string_view
+    - key:      bugprone-string-constructor.StringNames
+      value:    ::std::basic_string;::std::basic_string_view;::absl::string_view
+    - key:      modernize-use-default-member-init.UseAssignment
+      value:    1
+    - key:      modernize-use-transparent-functors.SafeMode
+      value:    1
+    - key:      modernize-use-emplace.IgnoreImplicitConstructors
+      value:    1
+...

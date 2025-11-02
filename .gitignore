@@ -1,0 +1,11 @@
+# bazel
+/bazel-*
+/external
+/MODULE.bazel.lock
+
+# settings
+/.cache
+/.vscode
+
+# cpp
+/compile_commands.json

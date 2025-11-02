@@ -1,0 +1,59 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+
+cc_library(
+    name = "libhello",
+    srcs = [
+        "libhello/hello.cpp",
+    ],
+    hdrs = [
+        "libhello/hello.h",
+    ],
+    copts = ["-std=c++20"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "tests",
+    size = "small",
+    srcs = [
+        "libhello/hello_test.cpp",
+    ],
+    copts = ["-std=c++20"],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":libhello",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_binary(
+    name = "benchmark",
+    testonly = True,
+    srcs = [
+        "libhello/hello_benchmark.cpp",
+    ],
+    copts = ["-std=c++20"],
+    linkstatic = 1,
+    tags = ["benchmark"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":libhello",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+filegroup(
+    name = "clang_format_config",
+    srcs = [".clang-format"],
+    visibility = ["//:__subpackages__"],
+)
+
+filegroup(
+    name = "clang_tidy_config",
+    srcs = [".clang-tidy"],
+    visibility = ["//:__subpackages__"],
+)
