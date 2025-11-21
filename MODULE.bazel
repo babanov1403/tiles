@@ -2,23 +2,24 @@
 bazel project template
 """
 
-module(name = "project-template", version = "0.0.1")
+module(name = "tiles", version = "0.0.1")
 
 bazel_dep(name = "abseil-cpp", version = "20250814.1")
 bazel_dep(name = "google_benchmark", version = "1.9.4", dev_dependency = True)
 bazel_dep(name = "googletest", version = "1.17.0.bcr.1", dev_dependency = True)
 bazel_dep(name = "rules_cc", version = "0.2.13")
+# bazel_dep(name = "libtiles", version = "0.1.0")
 
 ################################################################################
 # toolchains
 ################################################################################
 
 # https://github.com/bazel-contrib/toolchains_llvm/blob/master/toolchain/internal/llvm_distributions.bzl
-bazel_dep(name = "toolchains_llvm", version = "1.5.0", dev_dependency = True)
-llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
-llvm.toolchain(llvm_version = "18.1.8")
-use_repo(llvm, "llvm_toolchain")
-register_toolchains("@llvm_toolchain//:all", dev_dependency = True)
+# bazel_dep(name = "toolchains_llvm", version = "1.5.0", dev_dependency = True)
+# llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+# llvm.toolchain(llvm_version = "18.1.8")
+# use_repo(llvm, "llvm_toolchain")
+# register_toolchains("@llvm_toolchain//:all", dev_dependency = True)
 
 # bazel_dep(name = "hermetic_cc_toolchain", version = "4.0.1", dev_dependency = True)
 # toolchains = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains", dev_dependency = True)

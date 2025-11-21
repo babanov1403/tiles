@@ -6,6 +6,12 @@
 # settings
 /.cache
 /.vscode
+/.clang-format
+/.clang-tidy
 
 # cpp
 /compile_commands.json
+
+# misc
+tilesets
+/**/*.out

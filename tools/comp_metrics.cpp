@@ -1,4 +1,6 @@
-#include "libhello/hello.h"
+// #include "libtiles"
+
+#include "metrika/metrika.h"
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -8,12 +10,13 @@
 #include "absl/log/log.h"
 
 #include <iostream>
-#include <string>
+#include <cstdio>
+#include <cstring>
+#include <cassert>
 
 ABSL_FLAG(std::string, user, "", "username");
 
-int main(int argc, char** argv)
-{
+int main(int argc, char* argv[]) {
     absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
     absl::ParseCommandLine(argc, argv);
     absl::InitializeLog();
@@ -23,7 +26,7 @@ int main(int argc, char** argv)
 
     LOG(INFO) << "user=" << user;
 
-    std::cout << libhello::hello(user) << std::endl;
+    std::cout << metrika::get_size() << std::endl;
 
     return 0;
 }
