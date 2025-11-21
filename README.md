@@ -1,20 +1,12 @@
-# bazel-project-template
+# How to run
 
-Install Bazel build system: https://bazel.build/install
 
 ```bash
-# Build library:
-bazel build //:all
-
-# Run tests and benchmark:
-bazel run //:tests
-bazel run //:benchmark
-
 # Build tools:
 bazel build //tools:all
 
 # Run binary:
-bazel-bin/tools/say_hello --user World
+bazel-bin/tools/comp_mertics --param1=param1 --param2=param2
 
 # Run benchmarks, clang-format and clang-tidy checks:
 bazel build --config=clang-format -k //...
