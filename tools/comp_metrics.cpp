@@ -2,6 +2,8 @@
 
 #include "metrika/metrika.h"
 
+#include "libtiles/tileindex/tileindex.h"
+
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/log/check.h"
@@ -20,6 +22,8 @@ int main(int argc, char* argv[]) {
     absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
     absl::ParseCommandLine(argc, argv);
     absl::InitializeLog();
+
+    libtiles::tileindex::IndexItem item;
 
     std::string user = absl::GetFlag(FLAGS_user);
     CHECK(!user.empty());

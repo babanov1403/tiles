@@ -10,7 +10,7 @@ cc_library(
         "metrika/constants.h"
     ],
     copts = ["-std=c++23"],
-    deps = [],
+    deps = ["@libtiles//:libtiles"],
     visibility = ["//visibility:public"],
 )
 
