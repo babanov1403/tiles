@@ -50,8 +50,9 @@ archive_override(
     urls = ["https://github.com/oliverlee/bazel_clang_format/archive/af6c342dc592ad4f1af76d0260aac90d5c9b426f.zip"],
 )
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-git_repository(
-    name = "libtiles",
-    remote = "https://github.com/eak1mov/libtiles.git"
+bazel_dep(name = "libtiles", version = "0.1.1")
+archive_override(
+    module_name = "libtiles",
+    strip_prefix = "libtiles-0.1.1",
+    urls = ["https://github.com/eak1mov/libtiles/archive/refs/tags/v0.1.1.zip"],
 )

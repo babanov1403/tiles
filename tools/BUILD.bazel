@@ -13,6 +13,5 @@ cc_binary(
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/log:initialize",
         "@abseil-cpp//absl/log:log",
-        "@libtiles//:libtiles",
     ], 
 )

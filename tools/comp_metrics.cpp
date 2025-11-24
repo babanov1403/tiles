@@ -2,7 +2,7 @@
 
 #include "metrika/metrika.h"
 
-#include "libtiles/tileindex/tileindex.h"
+// #include "libtiles/tileindex/tileindex.h"
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     absl::ParseCommandLine(argc, argv);
     absl::InitializeLog();
 
-    libtiles::tileindex::IndexItem item;
+    // libtiles::tileindex::IndexItem item;
 
     std::string user = absl::GetFlag(FLAGS_user);
     CHECK(!user.empty());
