@@ -14,5 +14,4 @@ bazel build --config=clang-tidy -k //...
 
 # Generate compile_commands.json for your IDE:
 bazel run @hedron_compile_commands//:refresh_all
-bazel run @bazel-compile-commands//bcc:bazel-compile-commands-bin
 ```
