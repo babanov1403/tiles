@@ -1,5 +1,7 @@
 #pragma once
 
+#include "libtiles/tileindex/tileindex.h"
+
 #include <cstdint>
 #include <optional>
 #include <tuple>
@@ -9,6 +11,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <queue>
 
 template<>
 struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
@@ -24,6 +27,8 @@ struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
 
 namespace stats {
 
+using libtiles::tileindex::IndexItem;
+using libtiles::tileindex::readIndexItems;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
 
 class LogParser {
@@ -80,6 +85,39 @@ public:
     }
 private:
     std::unordered_map<Tuple, std::size_t> stats_;   
+};
+
+class TileInfo {
+public:
+    void fill_from(std::filesystem::path path) {
+        items_ = readIndexItems(path);
+    }
+
+    // @babanov1403 TODO: change without extra copies lol
+    template <class Comp>
+    std::vector<IndexItem> get_topk_by(std::size_t k, Comp) const {
+        // @babanov1403 TODO: maybe juggle with IndexItem* , idk
+        std::priority_queue<IndexItem, Comp> heap;
+        for (const auto& item : items_) {
+            if (heap.size() < k) {
+                heap.push(item);
+            } else {
+                heap.pop();
+            }
+        }
+
+        std::vector<IndexItem> output;
+        output.reserve(k);
+        while (!heap.empty()) {
+            output.emplace_back(heap.top());
+            heap.pop();
+        }
+    
+        return output;
+    }
+
+private:
+    std::vector<IndexItem> items_;
 };
 
 }
