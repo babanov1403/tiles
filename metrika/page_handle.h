@@ -27,10 +27,17 @@ public:
         prioritized.erase(align(offset));
     }
 
-private:
+    std::uint64_t get_next_page(std::uint64_t offset) const {
+        return align(offset) + kPageSize;
+    }
+ 
     std::uint64_t align(std::uint64_t offset) const {
         constexpr std::size_t kPageMask = kPageSize - 1;
         return offset & ~kPageMask;
+    }
+
+    std::size_t get_page_size() const {
+        return kPageSize;
     }
 
 private:

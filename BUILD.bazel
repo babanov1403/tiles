@@ -4,10 +4,15 @@ cc_library(
     name = "metrika",
     srcs = [
         "metrika/metrika.cpp",
+        "metrika/page_handle.cpp",
+        "metrika/statistics.cpp",
+        "metrika/strategy.cpp"
     ],
     hdrs = [
         "metrika/metrika.h",
-        "metrika/constants.h"
+        "metrika/page_handle.h",
+        "metrika/statistics.h",
+        "metrika/strategy.h"
     ],
     copts = ["-std=c++23"],
     deps = ["@libtiles//:tileindex"],
@@ -25,49 +30,3 @@ filegroup(
     srcs = [".clang-tidy"],
     visibility = ["//:__subpackages__"],
 )
-
-# cc_test(
-#     name = "tests",
-#     size = "small",
-#     srcs = [
-#         "libhello/hello_test.cpp",
-#     ],
-#     copts = ["-std=c++20"],
-#     linkstatic = 1,
-#     visibility = ["//visibility:private"],
-#     deps = [
-#         ":libhello",
-#         "@googletest//:gtest_main",
-#     ],
-# )
-
-# cc_binary(
-#     name = "benchmark",
-#     testonly = True,
-#     srcs = [
-#         "libhello/hello_benchmark.cpp",
-#     ],
-#     copts = ["-std=c++20"],
-#     linkstatic = 1,
-#     tags = ["benchmark"],
-#     visibility = ["//visibility:private"],
-#     deps = [
-#         ":libhello",
-#         "@google_benchmark//:benchmark_main",
-#     ],
-# )
-
-# cc_library(
-#     name = "libhello",
-#     srcs = [
-#         "libhello/hello.cpp",
-#     ],
-#     hdrs = [
-#         "libhello/hello.h",
-#     ],
-#     copts = ["-std=c++20"],
-#     visibility = ["//visibility:public"],
-#     deps = [
-#         "@abseil-cpp//absl/strings",
-#     ],
-# )

@@ -11,7 +11,11 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <queue>
+
+#include <iostream>
+#include <format>
 
 template<>
 struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
@@ -45,7 +49,7 @@ public:
     std::optional<ParseResult> parse_next_line() {
         std::string line;
         if (std::getline(stream_, line)) {
-            std::stringstream ss(std::move(line));
+            std::stringstream ss(line);
             ParseResult result;
             ss >> result.z; ss.get();
             ss >> result.x; ss.get();
@@ -70,9 +74,11 @@ public:
     // else it will add value to existing element
     void fill_from(std::filesystem::path path) {
         LogParser parser(path);
-
         while (auto result = parser.parse_next_line()) {
             auto [x, y, z, visits] = *result;
+
+            std::cout << std::format("Got x = {}, y = {}, z = {}, visits = {}", x,y,z,visits) << std::endl; 
+
             stats_[std::make_tuple(x, y, z)] += visits; 
         }
     }
@@ -82,6 +88,14 @@ public:
             return stats_.at(std::make_tuple(x, y, z));
         }
         throw std::runtime_error(std::format("No tile with coords x: {} y:{}, z:{}", x, y, z));
+    }
+
+    std::size_t get_total_visits() const {
+        std::size_t total_visits = 0;
+        for (const auto& [coords, visits] : stats_) {
+            total_visits += visits;
+        }
+        return total_visits;
     }
 private:
     std::unordered_map<Tuple, std::size_t> stats_;   
@@ -99,11 +113,7 @@ public:
         // @babanov1403 TODO: maybe juggle with IndexItem* , idk
         std::priority_queue<IndexItem, Comp> heap;
         for (const auto& item : items_) {
-            if (heap.size() < k) {
-                heap.push(item);
-            } else {
-                heap.pop();
-            }
+            heap.size() < k ? heap.push(item) : heap.pop();
         }
 
         std::vector<IndexItem> output;
@@ -114,6 +124,11 @@ public:
         }
     
         return output;
+    }
+
+    // @babanov1403 TODO: get rid of setters/getters
+    const std::vector<IndexItem>& get_items() const {
+        return items_;
     }
 
 private:
