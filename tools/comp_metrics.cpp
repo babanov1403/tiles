@@ -16,8 +16,6 @@
 #include <cstring>
 #include <cassert>
 
-ABSL_FLAG(std::string, user, "", "username");
-
 int main(int argc, char* argv[]) {
     
 }
