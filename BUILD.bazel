@@ -4,17 +4,17 @@ cc_library(
     name = "metrika",
     srcs = [
         "metrika/metrika.cpp",
+        "metrika/strategy.cpp",
         "metrika/page_handle.cpp",
-        "metrika/statistics.cpp",
-        "metrika/strategy.cpp"
+        "metrika/statistics.cpp"
     ],
     hdrs = [
         "metrika/metrika.h",
+        "metrika/strategy.h",
         "metrika/page_handle.h",
-        "metrika/statistics.h",
-        "metrika/strategy.h"
+        "metrika/statistics.h"
     ],
-    copts = ["-std=c++23"],
+    copts = ["-std=c++20", "-O2"],
     deps = ["@libtiles//:tileindex"],
     visibility = ["//visibility:public"],
 )

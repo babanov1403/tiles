@@ -1,9 +1,10 @@
 #pragma once
 
-#include "page_handle.h"
-#include "statistics.h"
+#include "libtiles/tileindex/tileindex.h"
+#include "metrika/metrika.h"
 
-#include <algorithm>
+#include <bitset>
+#include <cassert>
 
 class IStrategy {
 public:
@@ -11,20 +12,18 @@ public:
         stats::Statistics* stats, stats::TileInfo* tile_info) const = 0;
 
 protected:
-    virtual PageHandle build_handler_from_tiles(const std::vector<libtiles::tileindex::IndexItem>& tiles) const {
-        PageHandle handler;
-        for (const auto& item : tiles) {
-            auto offset = item.offset;
-            handler.include_page(offset);
-        }
-
-        return handler;
-    }
-
+    using IndexItem = libtiles::tileindex::IndexItem;
+    virtual PageHandle build_handler_from_tiles(const std::vector<IndexItem>& tiles) const;
     virtual ~IStrategy() = default;
 };
 
 constexpr std::size_t kMaxTilesInMemory = 1000;
+
+class RandomStrategy : public IStrategy {
+public:
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileInfo* tile_info) const override;
+};
 
 // @brief
 // basic naive approach - we want to put in cache all top-k tiles (by data)
@@ -32,21 +31,33 @@ constexpr std::size_t kMaxTilesInMemory = 1000;
 class GreedyStrategy : public IStrategy {
 public:
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info) const override {
-        auto stats_comparator = [&stats](const auto& lhs, const auto& rhs) {
-            stats->get_visits_for(lhs.x, lhs.y, lhs.z) < stats->get_visits_for(rhs.x, rhs.y, rhs.z);
-        };
-        auto top_tiles = tile_info->get_topk_by(1000, stats_comparator);
-        return build_handler_from_tiles(top_tiles);
-    }
+        stats::Statistics* stats, stats::TileInfo* tile_info) const override;
 };
 
 // @brief
 // bruteforce until we find the best solution
 // based on Metrika impl
 class BruteForceStrategy : public IStrategy {
+private:
+    template <std::size_t MaxPages>
+    class PageCombinator {
+    public:
+        PageCombinator() = delete;
+        explicit PageCombinator(std::vector<std::size_t> pages) {}
+
+        std::optional<std::vector<std::size_t>> get_next_pages() {
+
+        }
+    private:
+        std::bitset<MaxPages> variants_;
+    };
+
+public:
+    explicit BruteForceStrategy(Metrika* metrika);
+
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info) const override {
-        return PageHandle{};
-    }
+        stats::Statistics* stats, stats::TileInfo* tile_info) const override;
+
+private:
+    Metrika* metrika_;
 };

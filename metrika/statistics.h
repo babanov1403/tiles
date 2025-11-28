@@ -1,21 +1,15 @@
 #pragma once
 
 #include "libtiles/tileindex/tileindex.h"
-
+ 
 #include <cstdint>
 #include <optional>
 #include <tuple>
 #include <unordered_map>
-#include <format>
 #include <fstream>
 #include <filesystem>
-#include <stdexcept>
 #include <string>
-#include <sstream>
-#include <queue>
-
 #include <iostream>
-#include <format>
 
 template<>
 struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
@@ -35,6 +29,18 @@ using libtiles::tileindex::IndexItem;
 using libtiles::tileindex::readIndexItems;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
 
+class Statistics;
+
+struct StatsLessComparator {
+    StatsLessComparator() = delete;
+    explicit StatsLessComparator(stats::Statistics* stats);
+
+    bool operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const;
+
+private:
+    stats::Statistics* stats_;
+};
+
 class LogParser {
     struct ParseResult {
         std::uint32_t x;
@@ -44,26 +50,17 @@ class LogParser {
     };
 
 public:
-    explicit LogParser(std::filesystem::path path) : stream_(path) {}
+    explicit LogParser(std::filesystem::path path);
 
-    std::optional<ParseResult> parse_next_line() {
-        std::string line;
-        if (std::getline(stream_, line)) {
-            std::stringstream ss(line);
-            ParseResult result;
-            ss >> result.z; ss.get();
-            ss >> result.x; ss.get();
-            ss >> result.y >> result.visits;
-            return result;
-        }
-        return std::nullopt;
-    }
+    // @babanov1403 TODO: this is too slow to parse line by line file
+    // do smth with it
+    std::optional<ParseResult> parse_next_line();
+
 private:
     std::ifstream stream_;
 }; 
 
 class Statistics {
-    
 public:
     Statistics() = default;
     Statistics(const Statistics&) = delete;
@@ -72,67 +69,30 @@ public:
     // @brief
     // if [x,y,z] not present in map, it will make new key with value visits
     // else it will add value to existing element
-    void fill_from(std::filesystem::path path) {
-        LogParser parser(path);
-        while (auto result = parser.parse_next_line()) {
-            auto [x, y, z, visits] = *result;
+    void fill_from(std::filesystem::path path);
+    std::size_t get_visits_for(std::uint32_t x, std::uint32_t y, std::uint32_t z) const;
+    std::size_t get_total_visits() const;
 
-            std::cout << std::format("Got x = {}, y = {}, z = {}, visits = {}", x,y,z,visits) << std::endl; 
-
-            stats_[std::make_tuple(x, y, z)] += visits; 
-        }
-    }
-
-    std::size_t get_visits_for(std::uint32_t x, std::uint32_t y, std::uint32_t z) const {
-        if (stats_.contains(std::make_tuple(x, y, z))) {
-            return stats_.at(std::make_tuple(x, y, z));
-        }
-        throw std::runtime_error(std::format("No tile with coords x: {} y:{}, z:{}", x, y, z));
-    }
-
-    std::size_t get_total_visits() const {
-        std::size_t total_visits = 0;
-        for (const auto& [coords, visits] : stats_) {
-            total_visits += visits;
-        }
-        return total_visits;
-    }
 private:
     std::unordered_map<Tuple, std::size_t> stats_;   
 };
 
 class TileInfo {
 public:
-    void fill_from(std::filesystem::path path) {
-        items_ = readIndexItems(path);
-    }
+    void fill_from(std::filesystem::path path);
 
     // @babanov1403 TODO: change without extra copies lol
-    template <class Comp>
-    std::vector<IndexItem> get_topk_by(std::size_t k, Comp) const {
-        // @babanov1403 TODO: maybe juggle with IndexItem* , idk
-        std::priority_queue<IndexItem, Comp> heap;
-        for (const auto& item : items_) {
-            heap.size() < k ? heap.push(item) : heap.pop();
-        }
-
-        std::vector<IndexItem> output;
-        output.reserve(k);
-        while (!heap.empty()) {
-            output.emplace_back(heap.top());
-            heap.pop();
-        }
-    
-        return output;
-    }
+    std::vector<IndexItem> get_topk_by(std::size_t k, StatsLessComparator cmp);
 
     // @babanov1403 TODO: get rid of setters/getters
-    const std::vector<IndexItem>& get_items() const {
-        return items_;
-    }
+    const std::vector<IndexItem>& get_items() const;
+    std::span<const IndexItem> get_sample() const;
+
+private:
+    std::vector<IndexItem> readFirstKIndexItems(const std::string& filePath, std::size_t k);
 
 private:
     std::vector<IndexItem> items_;
 };
 
-}
+} // namespace stats
