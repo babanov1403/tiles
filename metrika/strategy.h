@@ -9,20 +9,18 @@
 class IStrategy {
 public:
     virtual PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info) const = 0;
+        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const = 0;
 
 protected:
     using IndexItem = libtiles::tileindex::IndexItem;
-    virtual PageHandle build_handler_from_tiles(const std::vector<IndexItem>& tiles) const;
+    virtual PageHandle build_handler_from_tiles(const std::vector<IndexItem>& tiles, double ratio) const;
     virtual ~IStrategy() = default;
 };
-
-constexpr std::size_t kMaxTilesInMemory = 1000;
 
 class RandomStrategy : public IStrategy {
 public:
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info) const override;
+        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const override;
 };
 
 // @brief
@@ -31,7 +29,7 @@ public:
 class GreedyStrategy : public IStrategy {
 public:
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info) const override;
+        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const override;
 };
 
 // @brief
@@ -56,7 +54,7 @@ public:
     explicit BruteForceStrategy(Metrika* metrika);
 
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info) const override;
+        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const override;
 
 private:
     Metrika* metrika_;

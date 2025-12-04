@@ -1,9 +1,7 @@
 #include "statistics.h"
 
 #include <algorithm>
-#include <format>
-#include <stdexcept>
-#include <sstream>
+#include <ranges>
 
 #include <iostream>
 
@@ -19,21 +17,16 @@ using libtiles::tileindex::IndexItem;
 using libtiles::tileindex::readIndexItems;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
 
-LogParser::LogParser(std::filesystem::path path) : stream_(path) {}
+LogParser::LogParser(std::filesystem::path path) : stream_(path, std::ios_base::ate | std::ios_base::binary) {}
 
 // @babanov1403 TODO: this is too slow to parse line by line file
 // do smth with it
-std::optional< LogParser::ParseResult>  LogParser::parse_next_line() {
-    std::string line;
-    if (std::getline(stream_, line)) {
-        std::stringstream ss(line);
-        ParseResult result;
-        ss >> result.z; ss.get();
-        ss >> result.x; ss.get();
-        ss >> result.y >> result.visits;
-        return result;
-    }
-    return std::nullopt;
+std::vector<LogParser::ParseResult> LogParser::parse() {
+    size_t fileSize = stream_.tellg();
+    std::vector<LogParser::ParseResult> result(fileSize / sizeof(LogParser::ParseResult));
+    stream_.seekg(0);
+    stream_.read(reinterpret_cast<char*>(result.data()), result.size() * sizeof(LogParser::ParseResult));
+    return result;
 }
 
 // @brief
@@ -41,8 +34,11 @@ std::optional< LogParser::ParseResult>  LogParser::parse_next_line() {
 // else it will add value to existing element
 void Statistics::fill_from(std::filesystem::path path) {
     LogParser parser(path);
-    while (auto result = parser.parse_next_line()) {
-        auto [x, y, z, visits] = *result;
+    auto result = parser.parse();
+    auto filter_pred = [zoom = kMaxZoom](const auto& item) {
+        return item.z <= zoom;
+    };
+    for (auto [x, y, z, visits] : result | std::ranges::views::filter(filter_pred)) {
         stats_[std::make_tuple(x, y, z)] += visits; 
     }
 }
@@ -51,7 +47,8 @@ std::size_t Statistics::get_visits_for(std::uint32_t x, std::uint32_t y, std::ui
     if (stats_.contains(std::make_tuple(x, y, z))) {
         return stats_.at(std::make_tuple(x, y, z));
     }
-    throw std::runtime_error(std::format("No tile with coords x: {} y:{}, z:{}", x, y, z));
+    return 0;
+    // throw std::runtime_error(std::format("No tile with coords x: {} y:{}, z:{}", x, y, z));
 }
 
 std::size_t Statistics::get_total_visits() const {
@@ -66,28 +63,14 @@ std::size_t Statistics::get_total_visits() const {
 }
 
 void TileInfo::fill_from(std::filesystem::path path) {
-    items_ = readFirstKIndexItems(path, 100);
+    items_ = read_index_items(path);
 }
 
 // @babanov1403 TODO: change without extra copies lol
-std::vector<IndexItem> TileInfo::get_topk_by(std::size_t k, StatsLessComparator cmp) {
-    // @babanov1403 TODO: maybe juggle with IndexItem* , idk
-    // std::priority_queue<IndexItem, Comp> heap;
-    // for (const auto& item : items_) {
-    //     heap.size() < k ? heap.push(item) : heap.pop();
-    // }
-
-    // std::vector<IndexItem> output;
-    // output.reserve(k);
-    // while (!heap.empty()) {
-    //     output.emplace_back(heap.top());
-    //     heap.pop();
-    // }
-
+const std::vector<IndexItem>& TileInfo::get_sorted(StatsLessComparator cmp) {
     std::ranges::sort(items_, cmp);
-    auto result = std::vector(items_.begin(), items_.begin() + k);
-    std::ranges::reverse(result);
-    return result;
+    std::ranges::reverse(items_);
+    return items_;
 }
 
 // @babanov1403 TODO: get rid of setters/getters
@@ -99,13 +82,24 @@ std::span<const IndexItem> TileInfo::get_sample() const {
     return std::span(items_.begin() + 10, items_.begin() + 100);
 }
 
-std::vector<IndexItem> TileInfo::readFirstKIndexItems(const std::string& filePath, std::size_t k) {
+std::vector<IndexItem> TileInfo::read_index_items(const std::string& filePath) {
     std::ifstream istream(filePath, std::ios::binary | std::ios::ate);
     size_t fileSize = istream.tellg();
-    std::vector<IndexItem> result(k);
+    std::vector<IndexItem> result(fileSize / sizeof(IndexItem));
     istream.seekg(0);
     istream.read(reinterpret_cast<char*>(result.data()), result.size() * sizeof(IndexItem));
-    return result;
+    return filter_below_zoom(std::move(result));
+}
+
+std::vector<IndexItem> TileInfo::filter_below_zoom(std::vector<IndexItem>&& items) {
+    std::vector<IndexItem> filtered;
+    auto filter_pred = [zoom = kMaxZoom](const IndexItem& item) {
+        return item.z <= zoom;
+    };
+    for (const auto& item : items | std::ranges::views::filter(filter_pred)) {
+        filtered.emplace_back(item);
+    }
+    return filtered;
 }
 
 } // namespace stats

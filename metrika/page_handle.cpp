@@ -1,21 +1,26 @@
 #include "page_handle.h"
 
+#include <iostream>
+
 void PageHandle::warmup_pages() const {
     // @babanov1403 TODO: run through prioretized pages and touch it
     throw "not implemented";
 }
 
 bool PageHandle::is_prioritized(std::uint64_t offset) const {
-    return prioritized.contains(align(offset));
+    return prioritized_.contains(align(offset));
 }
 
-void PageHandle::include_page(std::uint64_t offset) {
-    // @babanov1403 TODO: check if size dont exceed kMaxPages
-    prioritized.insert(align(offset));
+bool PageHandle::include_page(std::uint64_t offset) {
+    if (prioritized_.size() >= kMaxPages * ratio_) {
+        return false;
+    }
+    prioritized_.insert(align(offset));
+    return true;
 }
 
 void PageHandle::exclude_page(std::uint64_t offset) {
-    prioritized.erase(align(offset));
+    prioritized_.erase(align(offset));
 }
 
 std::uint64_t PageHandle::get_next_page(std::uint64_t offset) const {
@@ -32,7 +37,11 @@ std::size_t PageHandle::get_page_size() const {
 }
 
 std::vector<PageHandle::OffsetFromFileBegin> PageHandle::get_cached() const {
-    return std::vector(prioritized.begin(), prioritized.end());
+    return std::vector(prioritized_.begin(), prioritized_.end());
+}
+
+void PageHandle::set_ratio(double ratio) {
+    ratio_ = ratio;
 }
 
 // @babanov1403 TODO: does file aligned with page cache?

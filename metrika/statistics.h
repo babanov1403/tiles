@@ -25,6 +25,8 @@ struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
 
 namespace stats {
 
+static constexpr std::size_t kMaxZoom = 5;
+
 using libtiles::tileindex::IndexItem;
 using libtiles::tileindex::readIndexItems;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
@@ -42,11 +44,11 @@ private:
 };
 
 class LogParser {
-    struct ParseResult {
-        std::uint32_t x;
-        std::uint32_t y;
-        std::uint32_t z;
-        std::size_t visits;
+    struct __attribute__((packed)) ParseResult {
+        std::uint64_t x;
+        std::uint64_t y;
+        std::uint64_t z;
+        std::uint64_t visits;
     };
 
 public:
@@ -54,7 +56,7 @@ public:
 
     // @babanov1403 TODO: this is too slow to parse line by line file
     // do smth with it
-    std::optional<ParseResult> parse_next_line();
+    std::vector<ParseResult> parse();
 
 private:
     std::ifstream stream_;
@@ -81,15 +83,15 @@ class TileInfo {
 public:
     void fill_from(std::filesystem::path path);
 
-    // @babanov1403 TODO: change without extra copies lol
-    std::vector<IndexItem> get_topk_by(std::size_t k, StatsLessComparator cmp);
+    const std::vector<IndexItem>& get_sorted(StatsLessComparator cmp);
 
     // @babanov1403 TODO: get rid of setters/getters
     const std::vector<IndexItem>& get_items() const;
     std::span<const IndexItem> get_sample() const;
 
 private:
-    std::vector<IndexItem> readFirstKIndexItems(const std::string& filePath, std::size_t k);
+    std::vector<IndexItem> read_index_items(const std::string&);
+    std::vector<IndexItem> filter_below_zoom(std::vector<IndexItem>&& items);
 
 private:
     std::vector<IndexItem> items_;

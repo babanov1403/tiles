@@ -3,9 +3,13 @@
 #include "statistics.h"
 #include "page_handle.h"
 
-// \sum stats[i] * (\sum !is_cached[page]) * page_sz) -> min (E)
-// сколько в среднем не будет лежать в кэше при запросе
+/*  
+    \sum stats[i] * (\sum !is_cached[page]) * page_sz) -> min (E)
+    Computes how many MB/s we need to process kRPSBound requests per second on average.
+    Same as how many bytes we need to read from disk on average.
+*/
 class Metrika {
+    static constexpr std::size_t kRPSBound = 50'000;
 public:
     Metrika() = delete;
     Metrika(const Metrika&) = delete;
