@@ -1,6 +1,6 @@
 #include "metrika.h"
 
-Metrika::Metrika(stats::Statistics* stats, stats::TileInfo* tile_info, PageHandle* handler)
+Metrika::Metrika(stats::Statistics* stats, stats::TileHandle* tile_info, PageHandle* handler)
     : stats_(stats), tile_info_(tile_info), handler_(handler) {}
 
 double Metrika::compute() const {

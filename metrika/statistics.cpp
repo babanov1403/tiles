@@ -13,6 +13,12 @@ bool StatsLessComparator::operator()(const libtiles::tileindex::IndexItem& lhs, 
     return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) < stats_->get_visits_for(rhs.x, rhs.y, rhs.z);
 }
 
+StatsLessScaledComparator::StatsLessScaledComparator(stats::Statistics* stats) : stats_(stats) {}
+
+bool StatsLessScaledComparator::operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const {
+    return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) * 1. / lhs.size < stats_->get_visits_for(rhs.x, rhs.y, rhs.z) * 1. / rhs.size;
+}
+
 using libtiles::tileindex::IndexItem;
 using libtiles::tileindex::readIndexItems;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
@@ -62,27 +68,33 @@ std::size_t Statistics::get_total_visits() const {
     return total_visits;
 }
 
-void TileInfo::fill_from(std::filesystem::path path) {
+void TileHandle::fill_from(std::filesystem::path path) {
     items_ = read_index_items(path);
 }
 
 // @babanov1403 TODO: change without extra copies lol
-const std::vector<IndexItem>& TileInfo::get_sorted(StatsLessComparator cmp) {
+const std::vector<IndexItem>& TileHandle::get_sorted(StatsLessComparator cmp) {
+    std::ranges::sort(items_, cmp);
+    std::ranges::reverse(items_);
+    return items_;
+}
+
+const std::vector<IndexItem>& TileHandle::get_sorted(StatsLessScaledComparator cmp) {
     std::ranges::sort(items_, cmp);
     std::ranges::reverse(items_);
     return items_;
 }
 
 // @babanov1403 TODO: get rid of setters/getters
-const std::vector<IndexItem>& TileInfo::get_items() const {
+const std::vector<IndexItem>& TileHandle::get_items() const {
     return items_;
 }
 
-std::span<const IndexItem> TileInfo::get_sample() const {
+std::span<const IndexItem> TileHandle::get_sample() const {
     return std::span(items_.begin() + 10, items_.begin() + 100);
 }
 
-std::vector<IndexItem> TileInfo::read_index_items(const std::string& filePath) {
+std::vector<IndexItem> TileHandle::read_index_items(const std::string& filePath) {
     std::ifstream istream(filePath, std::ios::binary | std::ios::ate);
     size_t fileSize = istream.tellg();
     std::vector<IndexItem> result(fileSize / sizeof(IndexItem));
@@ -91,7 +103,7 @@ std::vector<IndexItem> TileInfo::read_index_items(const std::string& filePath) {
     return filter_below_zoom(std::move(result));
 }
 
-std::vector<IndexItem> TileInfo::filter_below_zoom(std::vector<IndexItem>&& items) {
+std::vector<IndexItem> TileHandle::filter_below_zoom(std::vector<IndexItem>&& items) {
     std::vector<IndexItem> filtered;
     auto filter_pred = [zoom = kMaxZoom](const IndexItem& item) {
         return item.z <= zoom;
@@ -100,6 +112,14 @@ std::vector<IndexItem> TileInfo::filter_below_zoom(std::vector<IndexItem>&& item
         filtered.emplace_back(item);
     }
     return filtered;
+}
+
+void TileHandle::arrange_like_underlying() {
+    std::size_t offset_gl = 0;
+    for (auto& [x, y, z, size, offset] : items_) {
+        offset = offset_gl;
+        offset_gl += size;
+    }
 }
 
 } // namespace stats

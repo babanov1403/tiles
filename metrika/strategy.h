@@ -1,15 +1,13 @@
 #pragma once
 
 #include "libtiles/tileindex/tileindex.h"
-#include "metrika/metrika.h"
-
-#include <bitset>
-#include <cassert>
+#include "page_handle.h"
+#include "statistics.h"
 
 class IStrategy {
 public:
     virtual PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const = 0;
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const = 0;
 
 protected:
     using IndexItem = libtiles::tileindex::IndexItem;
@@ -20,7 +18,7 @@ protected:
 class RandomStrategy : public IStrategy {
 public:
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const override;
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };
 
 // @brief
@@ -29,33 +27,24 @@ public:
 class GreedyStrategy : public IStrategy {
 public:
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const override;
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };
 
 // @brief
-// bruteforce until we find the best solution
-// based on Metrika impl
-class BruteForceStrategy : public IStrategy {
-private:
-    template <std::size_t MaxPages>
-    class PageCombinator {
-    public:
-        PageCombinator() = delete;
-        explicit PageCombinator(std::vector<std::size_t> pages) {}
-
-        std::optional<std::vector<std::size_t>> get_next_pages() {
-
-        }
-    private:
-        std::bitset<MaxPages> variants_;
-    };
-
+// another naive approach - we want to put in cache all top-k tiles (by data)
+// so we will sort tiles by stats / size, and live happy live (no)
+class GreedyScaledStrategy : public IStrategy {
 public:
-    explicit BruteForceStrategy(Metrika* metrika);
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
+};
+
+// @brief
+// max capacity kRAMBound, we want max sum of visits, each tile costs tile.size
+class KnapsackStrategy : public IStrategy {
+public:
+    KnapsackStrategy() = default;
 
     PageHandle build_handler(
-        stats::Statistics* stats, stats::TileInfo* tile_info, double ratio) const override;
-
-private:
-    Metrika* metrika_;
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };

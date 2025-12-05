@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "total visits is: " << stats.get_total_visits() << '\n';
-    stats::TileInfo tiles;
+    stats::TileHandle tiles;
     tiles.fill_from(path_to_index);
 
     std::size_t tiles_size = 0;
@@ -39,6 +39,27 @@ int main(int argc, char* argv[]) {
     constexpr std::size_t kOriginSize = 101779385472;
 
     std::cout << tiles_size * 1. / kOriginSize * 16 * 1024ull * 1024 * 1024 << '\n';
+
+    std::cout << "\n====================================================\n";
+
+    {
+        RandomStrategy strategy;
+        PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
+        Metrika metrika(&stats, &tiles, &handler);
+        std::cout << "Metric for random approach is: " << metrika.compute() << " Mb/s" << '\n';
+    }
+
+    std::cout << "\n====================================================\n";
+
+    {
+        KnapsackStrategy strategy;
+        PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
+        Metrika metrika(&stats, &tiles, &handler);
+        std::cout << "Metric for knapsack 0-1 approach is: " << metrika.compute() << " Mb/s" << '\n';
+    }
+
+    std::cout << "\n====================================================\n";
+
     {
         GreedyStrategy strategy;
         PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
@@ -46,10 +67,33 @@ int main(int argc, char* argv[]) {
         std::cout << "Metric for greedy approach is: " << metrika.compute() << " Mb/s" << '\n';
     }
 
+    std::cout << "\n====================================================\n";
+
     {
-        RandomStrategy strategy;
+        GreedyStrategy strategy;
+        tiles.arrange_like_underlying();
         PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
         Metrika metrika(&stats, &tiles, &handler);
-        std::cout << "Metric for random approach is: " << metrika.compute() << " Mb/s" << '\n';
+        std::cout << "Metric for greedy rearranged approach is: " << metrika.compute() << " Mb/s" << '\n';
+    }
+
+    std::cout << "\n====================================================\n";
+
+    {
+        GreedyScaledStrategy strategy;
+        tiles.arrange_like_underlying();
+        PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
+        Metrika metrika(&stats, &tiles, &handler);
+        std::cout << "Metric for scaled greedy approach is: " << metrika.compute() << " Mb/s" << '\n';
+    }
+
+    std::cout << "\n====================================================\n";
+
+    {
+        GreedyScaledStrategy strategy;
+        tiles.arrange_like_underlying();
+        PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
+        Metrika metrika(&stats, &tiles, &handler);
+        std::cout << "Metric for greedy rearranged approach is: " << metrika.compute() << " Mb/s" << '\n';
     }
 }

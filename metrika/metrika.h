@@ -14,11 +14,11 @@ public:
     Metrika() = delete;
     Metrika(const Metrika&) = delete;
     Metrika(Metrika&&) = delete;
-    Metrika(stats::Statistics* stats, stats::TileInfo* tile_info, PageHandle* handler);
+    Metrika(stats::Statistics* stats, stats::TileHandle* tile_info, PageHandle* handler);
 
     double compute() const;
 private:
     stats::Statistics* stats_;
-    stats::TileInfo* tile_info_;
+    stats::TileHandle* tile_info_;
     PageHandle* handler_;
 };

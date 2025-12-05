@@ -12,7 +12,8 @@ bool PageHandle::is_prioritized(std::uint64_t offset) const {
 }
 
 bool PageHandle::include_page(std::uint64_t offset) {
-    if (prioritized_.size() >= kMaxPages * ratio_) {
+    if (!prioritized_.contains(align(offset))
+        && prioritized_.size() + 1 > kMaxPages * ratio_) {
         return false;
     }
     prioritized_.insert(align(offset));

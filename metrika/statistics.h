@@ -25,10 +25,9 @@ struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
 
 namespace stats {
 
-static constexpr std::size_t kMaxZoom = 5;
+static constexpr std::size_t kMaxZoom = 4;
 
 using libtiles::tileindex::IndexItem;
-using libtiles::tileindex::readIndexItems;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
 
 class Statistics;
@@ -36,6 +35,16 @@ class Statistics;
 struct StatsLessComparator {
     StatsLessComparator() = delete;
     explicit StatsLessComparator(stats::Statistics* stats);
+
+    bool operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const;
+
+private:
+    stats::Statistics* stats_;
+};
+
+struct StatsLessScaledComparator {
+    StatsLessScaledComparator() = delete;
+    explicit StatsLessScaledComparator(stats::Statistics* stats);
 
     bool operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const;
 
@@ -79,15 +88,22 @@ private:
     std::unordered_map<Tuple, std::size_t> stats_;   
 };
 
-class TileInfo {
+class TileHandle {
 public:
     void fill_from(std::filesystem::path path);
 
+    // @babanov1403 TODO: template
     const std::vector<IndexItem>& get_sorted(StatsLessComparator cmp);
+    const std::vector<IndexItem>& get_sorted(StatsLessScaledComparator cmp);
 
     // @babanov1403 TODO: get rid of setters/getters
     const std::vector<IndexItem>& get_items() const;
     std::span<const IndexItem> get_sample() const;
+
+    // @brief
+    // test function. it arranges tiles, like their position in vector items_
+    // maybe it will minimize some border pages includes.
+    void arrange_like_underlying();
 
 private:
     std::vector<IndexItem> read_index_items(const std::string&);
