@@ -32,9 +32,9 @@ using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
 
 class Statistics;
 
-struct StatsLessComparator {
-    StatsLessComparator() = delete;
-    explicit StatsLessComparator(stats::Statistics* stats);
+struct StatsGreaterComparator {
+    StatsGreaterComparator() = delete;
+    explicit StatsGreaterComparator(stats::Statistics* stats);
 
     bool operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const;
 
@@ -42,9 +42,9 @@ private:
     stats::Statistics* stats_;
 };
 
-struct StatsLessScaledComparator {
-    StatsLessScaledComparator() = delete;
-    explicit StatsLessScaledComparator(stats::Statistics* stats);
+struct StatsGreaterScaledComparator {
+    StatsGreaterScaledComparator() = delete;
+    explicit StatsGreaterScaledComparator(stats::Statistics* stats);
 
     bool operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const;
 
@@ -92,18 +92,10 @@ class TileHandle {
 public:
     void fill_from(std::filesystem::path path);
 
-    // @babanov1403 TODO: template
-    const std::vector<IndexItem>& get_sorted(StatsLessComparator cmp);
-    const std::vector<IndexItem>& get_sorted(StatsLessScaledComparator cmp);
-
     // @babanov1403 TODO: get rid of setters/getters
     const std::vector<IndexItem>& get_items() const;
+    std::vector<IndexItem>& get_items_mutable();
     std::span<const IndexItem> get_sample() const;
-
-    // @brief
-    // test function. it arranges tiles, like their position in vector items_
-    // maybe it will minimize some border pages includes.
-    void arrange_like_underlying();
 
 private:
     std::vector<IndexItem> read_index_items(const std::string&);

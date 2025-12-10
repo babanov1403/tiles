@@ -47,6 +47,7 @@ int main(int argc, char* argv[]) {
         PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
         Metrika metrika(&stats, &tiles, &handler);
         std::cout << "Metric for random approach is: " << metrika.compute() << " Mb/s" << '\n';
+        std::cout << "Average stats on page is: " << metrika.compute_sum_among_pages() << '\n'; 
     }
 
     std::cout << "\n====================================================\n";
@@ -56,6 +57,7 @@ int main(int argc, char* argv[]) {
         PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
         Metrika metrika(&stats, &tiles, &handler);
         std::cout << "Metric for knapsack 0-1 approach is: " << metrika.compute() << " Mb/s" << '\n';
+        std::cout << "Average stats on page is: " << metrika.compute_sum_among_pages() << '\n'; 
     }
 
     std::cout << "\n====================================================\n";
@@ -65,35 +67,16 @@ int main(int argc, char* argv[]) {
         PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
         Metrika metrika(&stats, &tiles, &handler);
         std::cout << "Metric for greedy approach is: " << metrika.compute() << " Mb/s" << '\n';
-    }
-
-    std::cout << "\n====================================================\n";
-
-    {
-        GreedyStrategy strategy;
-        tiles.arrange_like_underlying();
-        PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
-        Metrika metrika(&stats, &tiles, &handler);
-        std::cout << "Metric for greedy rearranged approach is: " << metrika.compute() << " Mb/s" << '\n';
+        std::cout << "Average stats on page is: " << metrika.compute_sum_among_pages() << '\n'; 
     }
 
     std::cout << "\n====================================================\n";
 
     {
         GreedyScaledStrategy strategy;
-        tiles.arrange_like_underlying();
         PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
         Metrika metrika(&stats, &tiles, &handler);
         std::cout << "Metric for scaled greedy approach is: " << metrika.compute() << " Mb/s" << '\n';
-    }
-
-    std::cout << "\n====================================================\n";
-
-    {
-        GreedyScaledStrategy strategy;
-        tiles.arrange_like_underlying();
-        PageHandle handler = strategy.build_handler(&stats, &tiles, tiles_size * 1. / kOriginSize);
-        Metrika metrika(&stats, &tiles, &handler);
-        std::cout << "Metric for greedy rearranged approach is: " << metrika.compute() << " Mb/s" << '\n';
+        std::cout << "Average stats on page is: " << metrika.compute_sum_among_pages() << '\n'; 
     }
 }

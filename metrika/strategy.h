@@ -12,6 +12,16 @@ public:
 protected:
     using IndexItem = libtiles::tileindex::IndexItem;
     virtual PageHandle build_handler_from_tiles(const std::vector<IndexItem>& tiles, double ratio) const;
+    virtual PageHandle build_handler_from_tiles(const std::vector<IndexItem>& tiles, stats::Statistics* stats, double ratio) const;
+    
+    // @brief updates layout \sum stats[page] -> max, or at least tries to
+    void update_layout(std::vector<IndexItem>& tiles) const;
+    
+    // @brief util function, splits array on two by pred
+    template <class Pred>
+    std::pair<std::vector<libtiles::tileindex::IndexItem>, std::vector<libtiles::tileindex::IndexItem>>
+    split_by(const std::vector<IndexItem>&, Pred) const;
+
     virtual ~IStrategy() = default;
 };
 

@@ -41,6 +41,10 @@ std::vector<PageHandle::OffsetFromFileBegin> PageHandle::get_cached() const {
     return std::vector(prioritized_.begin(), prioritized_.end());
 }
 
+std::size_t PageHandle::page_count() const {
+    return prioritized_.size();
+} 
+
 void PageHandle::set_ratio(double ratio) {
     ratio_ = ratio;
 }

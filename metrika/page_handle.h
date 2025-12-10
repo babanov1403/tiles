@@ -20,6 +20,7 @@ public:
     std::uint64_t align(std::uint64_t offset) const;
     std::size_t get_page_size() const;
     std::vector<OffsetFromFileBegin> get_cached() const;
+    std::size_t page_count() const;
 
     void set_ratio(double);
 

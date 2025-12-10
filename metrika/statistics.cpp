@@ -7,16 +7,16 @@
 
 namespace stats {
 
-StatsLessComparator::StatsLessComparator(stats::Statistics* stats) : stats_(stats) {}
+StatsGreaterComparator::StatsGreaterComparator(stats::Statistics* stats) : stats_(stats) {}
 
-bool StatsLessComparator::operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const {
-    return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) < stats_->get_visits_for(rhs.x, rhs.y, rhs.z);
+bool StatsGreaterComparator::operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const {
+    return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) > stats_->get_visits_for(rhs.x, rhs.y, rhs.z);
 }
 
-StatsLessScaledComparator::StatsLessScaledComparator(stats::Statistics* stats) : stats_(stats) {}
+StatsGreaterScaledComparator::StatsGreaterScaledComparator(stats::Statistics* stats) : stats_(stats) {}
 
-bool StatsLessScaledComparator::operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const {
-    return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) * 1. / lhs.size < stats_->get_visits_for(rhs.x, rhs.y, rhs.z) * 1. / rhs.size;
+bool StatsGreaterScaledComparator::operator()(const libtiles::tileindex::IndexItem& lhs, const libtiles::tileindex::IndexItem& rhs) const {
+    return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) * 1. / lhs.size > stats_->get_visits_for(rhs.x, rhs.y, rhs.z) * 1. / rhs.size;
 }
 
 using libtiles::tileindex::IndexItem;
@@ -72,26 +72,17 @@ void TileHandle::fill_from(std::filesystem::path path) {
     items_ = read_index_items(path);
 }
 
-// @babanov1403 TODO: change without extra copies lol
-const std::vector<IndexItem>& TileHandle::get_sorted(StatsLessComparator cmp) {
-    std::ranges::sort(items_, cmp);
-    std::ranges::reverse(items_);
-    return items_;
-}
-
-const std::vector<IndexItem>& TileHandle::get_sorted(StatsLessScaledComparator cmp) {
-    std::ranges::sort(items_, cmp);
-    std::ranges::reverse(items_);
-    return items_;
-}
-
 // @babanov1403 TODO: get rid of setters/getters
 const std::vector<IndexItem>& TileHandle::get_items() const {
     return items_;
 }
 
+std::vector<IndexItem>& TileHandle::get_items_mutable() {
+    return items_;
+}
+
 std::span<const IndexItem> TileHandle::get_sample() const {
-    return std::span(items_.begin() + 10, items_.begin() + 100);
+    return std::span(items_.begin(), items_.begin() + 100);
 }
 
 std::vector<IndexItem> TileHandle::read_index_items(const std::string& filePath) {
@@ -112,14 +103,6 @@ std::vector<IndexItem> TileHandle::filter_below_zoom(std::vector<IndexItem>&& it
         filtered.emplace_back(item);
     }
     return filtered;
-}
-
-void TileHandle::arrange_like_underlying() {
-    std::size_t offset_gl = 0;
-    for (auto& [x, y, z, size, offset] : items_) {
-        offset = offset_gl;
-        offset_gl += size;
-    }
 }
 
 } // namespace stats

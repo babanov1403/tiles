@@ -17,6 +17,7 @@ public:
     Metrika(stats::Statistics* stats, stats::TileHandle* tile_info, PageHandle* handler);
 
     double compute() const;
+    double compute_sum_among_pages() const;
 private:
     stats::Statistics* stats_;
     stats::TileHandle* tile_info_;
