@@ -8,13 +8,14 @@ class PageHandle {
     using OffsetFromFileBegin = std::size_t;
     static constexpr std::size_t kRAMBound = 16ull * 1024 * 1024 * 1024;
     static constexpr std::size_t kPageSize = 4 * 1024;
-    static constexpr std::size_t kMaxPages = kRAMBound / kPageSize;
 public:
     PageHandle() = default;
+    explicit PageHandle(double);
 
     void warmup_pages() const;
     bool is_prioritized(std::uint64_t offset) const;
-    bool include_page(std::uint64_t offset);
+    bool check_memory_exceed() const;
+    void include_page(std::uint64_t offset);
     void exclude_page(std::uint64_t offset);
     std::uint64_t get_next_page(std::uint64_t offset) const;
     std::uint64_t align(std::uint64_t offset) const;

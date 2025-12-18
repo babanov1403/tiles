@@ -2,6 +2,8 @@
 #include "statistics.h"
 
 #include <algorithm>
+#include <set>
+#include <cassert>
 #include <random>
 
 PageHandle IStrategy::build_handler_from_tiles(const std::vector<IndexItem>& tiles, double ratio) const {
@@ -13,7 +15,7 @@ PageHandle IStrategy::build_handler_from_tiles(const std::vector<IndexItem>& til
         auto start = handler.align(item.offset);
         for (auto offset = start; offset <= start + item.size; offset += handler.get_page_size()) {
             bool was = handler.is_prioritized(offset);
-            if (!handler.include_page(offset)) {
+            if (handler.check_memory_exceed()) {
                 std::cout << "Total tiles included is " << tiles_counter << '\n';
                 std::cout << "Total bytes included is " << pages_counter * 4 * 1024 << '\n';
                 return handler;
@@ -30,9 +32,16 @@ PageHandle IStrategy::build_handler_from_tiles(const std::vector<IndexItem>& til
 }
 
 void IStrategy::update_layout(std::vector<IndexItem>& tiles) const {
-    auto [small_tiles, big_tiles] = split_by(tiles, [](const IndexItem& item){
-        return item.size > PageHandle{}.get_page_size();
-    });
+    std::size_t offset_gl = 0;
+    for (auto& [x, y, z, size, offset] : tiles) {
+        offset = offset_gl;
+        offset_gl += size;
+    }
+    // auto [small_tiles, big_tiles] = split_by(tiles, [](const IndexItem& item){
+    //     return item.size > PageHandle{}.get_page_size();
+    // });
+
+    // tiles = 
 
     // implement algo... fuck
 
@@ -67,15 +76,22 @@ PageHandle IStrategy::build_handler_from_tiles(const std::vector<IndexItem>& til
     std::size_t pages_counter = 0;
     std::size_t visits_counter = 0;
     for (const auto& item : tiles) {
+        if (tiles_counter == 225) {
+            // break;
+        }
         auto start = handler.align(item.offset);
-        for (auto offset = start; offset <= start + item.size; offset += handler.get_page_size()) {
+        // std::cout << "tiles included: " << tiles_counter << '\n';
+        // std::cout << "tile on offset: " << start << " memory left: " << 16 * 1024 * 1024 * 1024. * ratio - handler.page_count() * 4096 << '\n';
+        for (auto offset = start; offset < start + item.size; offset += handler.get_page_size()) {
             bool was = handler.is_prioritized(offset);
-            if (!handler.include_page(offset)) {
+            handler.include_page(offset);
+            if (handler.check_memory_exceed()) {
                 std::cout << "Total tiles included is " << tiles_counter << '\n';
                 std::cout << "Total bytes included is " << pages_counter * 4 * 1024 << '\n';
                 std::cout << "Total visits among tiles is " << visits_counter << '\n';
                 return handler;
             }
+
             if (!was) {
                 pages_counter++;
             }
@@ -106,6 +122,11 @@ PageHandle GreedyStrategy::build_handler(
     auto& tiles = tile_info->get_items_mutable();
     std::ranges::sort(tiles, stats::StatsGreaterComparator(stats));
     update_layout(tiles);
+    // std::cout << "=-=-=-=-==-=-=-=-=-\n";
+    // for (auto tile : tile_info->get_first(10)) {
+        // std::cout << tile.x << " " << tile.y << " " << tile.z << " " << tile.size << " " << tile.offset << '\n';
+    // }
+    // std::cout << "=-=-=-=-==-=-=-=-=-\n";
     return build_handler_from_tiles(tiles, stats, ratio);
 }
 
@@ -129,51 +150,55 @@ PageHandle KnapsackStrategy::build_handler(
     }
 
 
-    std::cout << "Using dp we packed " << dp.back().back() << '\n';
-    std::cout << "Building what tiles we need to include...\n";
+    std::cout << "Using dp we packed " << dp.back().back() << " visits and ";
 
-    std::vector<IndexItem> top_tiles;
-    std::unordered_set<std::size_t> top_tiles_indexes;
+    std::set<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t, std::uint64_t, std::uint64_t>> top_tiles;
 
     std::size_t k = kTilesCnt;
     std::size_t s = kRAMBound;
 
-    while (true) {
-        if (dp[k][s] == 0) {
-            break;
-        }
-
+    while (dp[k][s] != 0) {
         if (dp[k][s] == dp[k - 1][s]) {
             k -= 1;
         } else {
-            top_tiles_indexes.insert(k);
-            top_tiles.push_back(tiles[k]);
+            top_tiles.emplace(tiles[k].x, tiles[k].y, tiles[k].z, tiles[k].size, tiles[k].offset);
             s -= tiles[k].size;
             k -= 1;
         }
     }
+    std::cout << top_tiles.size() << " tiles!\n";
+    std::size_t result_v = 0;
+    std::size_t result_s = 0;
 
-    // arrange all top_tiles_indexes together
-    std::size_t split = 0;
-    while (!top_tiles_indexes.empty()) {
-        if (top_tiles_indexes.contains(split)) {
-            top_tiles_indexes.erase(split);
-            split++;
-            continue;
-        }
-        auto next = *top_tiles_indexes.begin();
-        top_tiles_indexes.erase(next);
-        std::swap(tiles[next], tiles[split]);
-        split++;
+    for (auto tile : top_tiles) {
+        result_v += stats->get_visits_for(std::get<0>(tile), std::get<1>(tile), std::get<2>(tile));
+        result_s += std::get<3>(tile);
     }
 
-    // update_layout(tiles);
+    // std::cout << dp.back().back() << " vs " << result_v << '\n';
+    // assert(expr)
+    // std::cout << result_s << '\n';
 
-    std::ranges::sort(top_tiles, [stats_ = stats](const auto& lhs, const auto& rhs) {
+    auto middle = std::partition(tiles.begin(), tiles.end(), [&top_tiles](const IndexItem& item) {
+        return top_tiles.contains(std::make_tuple(item.x, item.y, item.z, item.size, item.offset));
+    });
+
+    // std::cout << "Index of split is: " << split << '\n';
+
+    std::ranges::sort(tiles.begin(),middle, [stats_ = stats](const auto& lhs, const auto& rhs) {
         return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) > stats_->get_visits_for(rhs.x, rhs.y, rhs.z);
     });
 
-    return build_handler_from_tiles(top_tiles, stats, ratio);
+    update_layout(tiles);
+    std::size_t size_after_sort = 0;
+    // std::cout << "=-=-=-=-==-=-=-=-=-\n";
+    // for (auto tile : tile_info->get_first(224)) {
+        // std::cout << tile.x << " " << tile.y << " " << tile.z << " " << tile.size << " " << tile.offset << '\n';
+        // size_after_sort += stats->get_visits_for(tile.x, tile.y, tile.z);
+    // }
+    // std::cout << size_after_sort << ' ' << dp.back().back() << '\n';
+    // std::cout << "=-=-=-=-==-=-=-=-=-\n";
+    return build_handler_from_tiles(tiles, stats, ratio);
 }
 
 PageHandle GreedyScaledStrategy::build_handler(
@@ -186,3 +211,14 @@ PageHandle GreedyScaledStrategy::build_handler(
     return build_handler_from_tiles(tiles, stats, ratio);
 }
 
+PageHandle RofloStrategy::build_handler(
+    stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const {
+    
+    auto& tiles = tile_info->get_items_mutable();
+    std::ranges::sort(tiles, [stats](const IndexItem& lhs, const IndexItem& rhs) {
+        return lhs.size > rhs.size;
+    });
+    update_layout(tiles);
+
+    return build_handler_from_tiles(tiles, stats, ratio);
+}

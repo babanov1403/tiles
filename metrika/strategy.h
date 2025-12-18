@@ -58,3 +58,11 @@ public:
     PageHandle build_handler(
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };
+
+class RofloStrategy : public IStrategy {
+public:
+    RofloStrategy() = default;
+
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
+};

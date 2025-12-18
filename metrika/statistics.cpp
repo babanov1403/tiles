@@ -32,6 +32,7 @@ std::vector<LogParser::ParseResult> LogParser::parse() {
     std::vector<LogParser::ParseResult> result(fileSize / sizeof(LogParser::ParseResult));
     stream_.seekg(0);
     stream_.read(reinterpret_cast<char*>(result.data()), result.size() * sizeof(LogParser::ParseResult));
+    std::cout << "asadsd " << result.size() << '\n' ;
     return result;
 }
 
@@ -81,8 +82,8 @@ std::vector<IndexItem>& TileHandle::get_items_mutable() {
     return items_;
 }
 
-std::span<const IndexItem> TileHandle::get_sample() const {
-    return std::span(items_.begin(), items_.begin() + 100);
+std::span<const IndexItem> TileHandle::get_first(std::size_t k) const {
+    return std::span(items_.begin(), items_.begin() + k);
 }
 
 std::vector<IndexItem> TileHandle::read_index_items(const std::string& filePath) {

@@ -18,6 +18,7 @@ public:
 
     double compute() const;
     double compute_sum_among_pages() const;
+    double compute_unpaged() const;
 private:
     stats::Statistics* stats_;
     stats::TileHandle* tile_info_;
