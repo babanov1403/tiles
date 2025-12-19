@@ -61,6 +61,10 @@ int main(int argc, char* argv[]) {
     output_metrics<SectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
     // output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
     output_metrics<GreedyStrategy>(&stats, &tiles, ratio, "GreedyStrategy");
-    // output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
-    // output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
+    output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
+    output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
+    /*
+        1) implement silly approach without any reaarange and compare it with greedy
+        2) 
+    */
 }

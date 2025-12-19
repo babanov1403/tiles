@@ -261,7 +261,7 @@ PageHandle KnapsackStrategy::build_handler(
     for (std::size_t k = 1; k <= kTilesCnt; k++) {
         for (std::size_t s = 1; s <= kRAMBound; s++) {
             if (s >= tiles[k].size) {
-                dp[k][s] = std::max(dp[k - 1][s], dp[k - 1][s - tiles[k].size] + stats->get_visits_for(tiles[k].x, tiles[k].y, tiles[k].z) * (tiles[k].size + tiles[k].size - 1) / kPageSize);     
+                dp[k][s] = std::max(dp[k - 1][s], dp[k - 1][s - tiles[k].size] + stats->get_visits_for(tiles[k].x, tiles[k].y, tiles[k].z) * (tiles[k].size + kPageSize - 1) / kPageSize);     
             } else {
                 dp[k][s] = dp[k - 1][s];
             }

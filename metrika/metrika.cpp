@@ -66,13 +66,12 @@ double Metrika::compute_ideal() const {
     std::size_t expected_fair_lookup_bytes = 0;
     for (auto [x, y, z, size, offset] : tile_info_->get_items()) {
         offset = handler_->align(offset);
-        std::size_t uncached_bytes = 0;
-        for (std::size_t page_addr = offset; page_addr < offset + size; page_addr += handler_->get_page_size()) {
-            if (!handler_->is_prioritized(page_addr)) {
-                uncached_bytes += (size + size - 1) / handler_->get_page_size();
-            }
+        
+        if (handler_->is_prioritized(offset)) {
+            continue;
         }
-        expected_fair_lookup_bytes += stats_->get_visits_for(x, y, z) * uncached_bytes;
+        std::size_t uncached_bytes = (size + handler_->get_page_size() - 1) / handler_->get_page_size();
+        expected_fair_lookup_bytes += stats_->get_visits_for(x, y, z) * uncached_bytes * handler_->get_page_size();
     }
 
     std::size_t total_visits = stats_->get_total_visits();

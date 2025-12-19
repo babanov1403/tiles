@@ -60,20 +60,9 @@ def parse_stats_file_generator(filepath: str):
 if __name__ == "__main__":
     index_path = "/home/yc-user/tiles/tilesets/data/2025-08-02-planet.index"
     stats_path = "/home/yc-user/tiles/tilesets/log/tiles-2025-09-01.bin"
-    
-    # Read index data
-    cnt = 0
-    tile_info = []
-    bar = tqdm.tqdm(total=69875051, desc="Processing tiles")
-    for item in parse_index_file_generator(index_path):
-        tile_info.append(item)
-        bar.update(1)
-        cnt += 1
-        if cnt == 69875051:
-            break
-    bar.close()
-    
-    # Read stats data
+
+    only_visits = 1
+
     stats_info = []
     bar = tqdm.tqdm(total=31703414, desc="Processing stats")
     for item in parse_stats_file_generator(stats_path):
@@ -81,146 +70,163 @@ if __name__ == "__main__":
         bar.update(1)
     bar.close()
 
-    """
-    посчитать статистики
-    1) распределение тайлов по размеру в зависимости от зума
-    2) сколько в среднем на тайл визитов в зависимости от зума
-    """
+    if not only_visits:
     
-    # 1) Распределение тайлов по размеру в зависимости от зума
-    print("\n=== Распределение тайлов по размеру в зависимости от зума ===")
-    
-    # Группируем тайлы по зумам
-    tiles_by_zoom = {}
-    for zoom in range(14):
-        if zoom not in tiles_by_zoom:
-            tiles_by_zoom[zoom] = []
+    # Read index data
+        cnt = 0
+        tile_info = []
+        bar = tqdm.tqdm(total=69875051, desc="Processing tiles")
+        for item in parse_index_file_generator(index_path):
+            tile_info.append(item)
+            bar.update(1)
+            cnt += 1
+            if cnt == 69875051:
+                break
+        bar.close()
 
-    for tile in tile_info:
-        zoom = tile.z
-        
-        for zoom_id in range(zoom, 14):
-            tiles_by_zoom[zoom_id].append(tile)
-    
-    # Выводим статистику по зумам
-    print(f"Всего зумов: {len(tiles_by_zoom)}")
-    for zoom in sorted(tiles_by_zoom.keys()):
-        tiles = tiles_by_zoom[zoom]
-        sizes = [tile.size for tile in tiles]
-        print(f"Zoom {zoom}: {len(tiles)} тайлов, размеры: "
-              f"min={min(sizes)}B, max={max(sizes)}B, "
-              f"avg={np.mean(sizes):.0f}B, med={np.median(sizes):.0f}B")
-    
-    # Создаем графики
-    # Вариант 1: Общий график для всех зумов (в логарифмическом масштабе)
-    print("\nСоздание общего графика распределения размеров тайлов...")
-    fig1, ax1 = plt.subplots(figsize=(14, 8))
-    
-    all_sizes = [tile.size for tile in tile_info]
-    
-    # Логарифмическая гистограмма
-    ax1.hist(all_sizes, bins=100, log=True, alpha=0.7, color='blue', edgecolor='black')
-    ax1.set_xlabel('Размер тайла (байты)', fontsize=12)
-    ax1.set_ylabel('Количество тайлов (log scale)', fontsize=12)
-    ax1.set_title('Распределение размеров тайлов (все зумы)', fontsize=14, fontweight='bold')
-    ax1.grid(True, alpha=0.3)
-    
-    # Добавляем вертикальные линии для квартилей
-    q25, q50, q75 = np.percentile(all_sizes, [25, 50, 75])
-    ax1.axvline(q50, color='red', linestyle='--', alpha=0.7, label=f'Медиана: {int(q50)} B')
-    ax1.axvline(q25, color='orange', linestyle='--', alpha=0.5, label=f'25-й перцентиль: {int(q25)} B')
-    ax1.axvline(q75, color='green', linestyle='--', alpha=0.5, label=f'75-й перцентиль: {int(q75)} B')
-    
-    ax1.legend()
-    plt.tight_layout()
-    plt.savefig('tile_sizes_all_zooms_2.png', dpi=150, bbox_inches='tight')
-    
-    # Вариант 2: Отдельные графики для каждого зума
-    print("\nСоздание отдельных графиков для каждого зума...")
-    
-    # Определяем оптимальную сетку для subplots
-    zoom_levels = sorted(tiles_by_zoom.keys())
-    n_zooms = len(zoom_levels)
-    
-    # Вычисляем размеры сетки
-    cols = 4
-    rows = (n_zooms + cols - 1) // cols
-    
-    fig2, axes = plt.subplots(rows, cols, figsize=(20, 4*rows))
-    axes = axes.flatten() if n_zooms > 1 else [axes]
-    
-    for idx, zoom in enumerate(zoom_levels):
-        ax = axes[idx]
-        sizes = [tile.size for tile in tiles_by_zoom[zoom]]
-        
-        # Гистограмма в логарифмическом масштабе
-        ax.hist(sizes, bins=50, log=True, alpha=0.7, color='steelblue', edgecolor='black')
-        ax.set_title(f'Zoom {zoom} (n={len(sizes):,})', fontsize=11, fontweight='bold')
-        ax.set_xlabel('Размер (B)')
-        ax.set_ylabel('Количество (log)')
-        ax.grid(True, alpha=0.3)
-        
-        # Добавляем медиану
-        median_size = np.median(sizes)
-        ax.axvline(median_size, color='red', linestyle='--', alpha=0.7, 
-                  label=f'Медиана: {int(median_size)} B')
-        ax.legend(fontsize=9)
-        
-        # Форматируем большие числа на оси X
-        if max(sizes) > 1000000:  # Если размеры в мегабайтах
-            ax.xaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-            ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-    
-    # Скрываем пустые subplots
-    for idx in range(len(zoom_levels), len(axes)):
-        axes[idx].set_visible(False)
-    
-    plt.suptitle('Распределение размеров тайлов по зумам', fontsize=16, fontweight='bold', y=1.02)
-    plt.tight_layout()
-    plt.savefig('tile_sizes_by_zoom_2.png', dpi=150, bbox_inches='tight')
-    
-    # Вариант 3: Box plot для сравнения распределений по зумам
-    print("\nСоздание Box plot для сравнения распределений...")
-    fig3, ax3 = plt.subplots(figsize=(14, 8))
-    
-    # Собираем данные для box plot
-    box_data = []
-    box_labels = []
-    for zoom in sorted(tiles_by_zoom.keys()):
-        sizes = [tile.size for tile in tiles_by_zoom[zoom]]
-        if len(sizes) > 10:  # Только зумы с достаточным количеством тайлов
-            box_data.append(sizes)
-            box_labels.append(f'Z{zoom}\n(n={len(sizes):,})')
-    
-    # Создаем box plot с логарифмической шкалой
-    box = ax3.boxplot(box_data, labels=box_labels, showfliers=False, patch_artist=True)
-    
-    # Раскрашиваем box'ы
-    colors = plt.cm.viridis(np.linspace(0, 1, len(box_data)))
-    for patch, color in zip(box['boxes'], colors):
-        patch.set_facecolor(color)
-        patch.set_alpha(0.7)
-    
-    ax3.set_yscale('log')
-    ax3.set_ylabel('Размер тайла (байты, log scale)', fontsize=12)
-    ax3.set_xlabel('Уровень зума', fontsize=12)
-    ax3.set_title('Сравнение распределений размеров тайлов по зумам (без выбросов)', 
-                  fontsize=14, fontweight='bold')
-    ax3.grid(True, alpha=0.3, axis='y')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig('tile_sizes_boxplot_2.png', dpi=150, bbox_inches='tight')
-    
+        """
+        посчитать статистики
+        1) распределение тайлов по размеру в зависимости от зума
+        2) сколько в среднем на тайл визитов в зависимости от зума
+        """
+
+        # 1) Распределение тайлов по размеру в зависимости от зума
+        print("\n=== Распределение тайлов по размеру в зависимости от зума ===")
+
+        # Группируем тайлы по зумам
+        tiles_by_zoom = {}
+        for zoom in range(14):
+            if zoom not in tiles_by_zoom:
+                tiles_by_zoom[zoom] = []
+
+        for tile in tile_info:
+            zoom = tile.z
+            
+            for zoom_id in range(zoom, 14):
+                tiles_by_zoom[zoom_id].append(tile)
+
+        # Выводим статистику по зумам
+        print(f"Всего зумов: {len(tiles_by_zoom)}")
+        for zoom in sorted(tiles_by_zoom.keys()):
+            tiles = tiles_by_zoom[zoom]
+            sizes = [tile.size for tile in tiles]
+            print(f"Zoom {zoom}: {len(tiles)} тайлов, размеры: "
+                    f"min={min(sizes)}B, max={max(sizes)}B, "
+                    f"avg={np.mean(sizes):.0f}B, med={np.median(sizes):.0f}B")
+
+        # Создаем графики
+        # Вариант 1: Общий график для всех зумов (в логарифмическом масштабе)
+        print("\nСоздание общего графика распределения размеров тайлов...")
+        fig1, ax1 = plt.subplots(figsize=(14, 8))
+
+        all_sizes = [tile.size for tile in tile_info]
+
+        # Логарифмическая гистограмма
+        ax1.hist(all_sizes, bins=100, log=True, alpha=0.7, color='blue', edgecolor='black')
+        ax1.set_xlabel('Размер тайла (байты)', fontsize=12)
+        ax1.set_ylabel('Количество тайлов (log scale)', fontsize=12)
+        ax1.set_title('Распределение размеров тайлов (все зумы)', fontsize=14, fontweight='bold')
+        ax1.grid(True, alpha=0.3)
+
+        # Добавляем вертикальные линии для квартилей
+        q25, q50, q75 = np.percentile(all_sizes, [25, 50, 75])
+        ax1.axvline(q50, color='red', linestyle='--', alpha=0.7, label=f'Медиана: {int(q50)} B')
+        ax1.axvline(q25, color='orange', linestyle='--', alpha=0.5, label=f'25-й перцентиль: {int(q25)} B')
+        ax1.axvline(q75, color='green', linestyle='--', alpha=0.5, label=f'75-й перцентиль: {int(q75)} B')
+
+        ax1.legend()
+        plt.tight_layout()
+        plt.savefig('tile_sizes_all_zooms_2.png', dpi=150, bbox_inches='tight')
+
+        # Вариант 2: Отдельные графики для каждого зума
+        print("\nСоздание отдельных графиков для каждого зума...")
+
+        # Определяем оптимальную сетку для subplots
+        zoom_levels = sorted(tiles_by_zoom.keys())
+        n_zooms = len(zoom_levels)
+
+        # Вычисляем размеры сетки
+        cols = 4
+        rows = (n_zooms + cols - 1) // cols
+
+        fig2, axes = plt.subplots(rows, cols, figsize=(20, 4*rows))
+        axes = axes.flatten() if n_zooms > 1 else [axes]
+
+        for idx, zoom in enumerate(zoom_levels):
+            ax = axes[idx]
+            sizes = [tile.size for tile in tiles_by_zoom[zoom]]
+            
+            # Гистограмма в логарифмическом масштабе
+            ax.hist(sizes, bins=50, log=True, alpha=0.7, color='steelblue', edgecolor='black')
+            ax.set_title(f'Zoom {zoom} (n={len(sizes):,})', fontsize=11, fontweight='bold')
+            ax.set_xlabel('Размер (B)')
+            ax.set_ylabel('Количество (log)')
+            ax.grid(True, alpha=0.3)
+            
+            # Добавляем медиану
+            median_size = np.median(sizes)
+            ax.axvline(median_size, color='red', linestyle='--', alpha=0.7, 
+                        label=f'Медиана: {int(median_size)} B')
+            ax.legend(fontsize=9)
+            
+            # Форматируем большие числа на оси X
+            if max(sizes) > 1000000:  # Если размеры в мегабайтах
+                ax.xaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+                ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+
+        # Скрываем пустые subplots
+        for idx in range(len(zoom_levels), len(axes)):
+            axes[idx].set_visible(False)
+
+        plt.suptitle('Распределение размеров тайлов по зумам', fontsize=16, fontweight='bold', y=1.02)
+        plt.tight_layout()
+        plt.savefig('tile_sizes_by_zoom_2.png', dpi=150, bbox_inches='tight')
+
+        # Вариант 3: Box plot для сравнения распределений по зумам
+        print("\nСоздание Box plot для сравнения распределений...")
+        fig3, ax3 = plt.subplots(figsize=(14, 8))
+
+        # Собираем данные для box plot
+        box_data = []
+        box_labels = []
+        for zoom in sorted(tiles_by_zoom.keys()):
+            sizes = [tile.size for tile in tiles_by_zoom[zoom]]
+            if len(sizes) > 10:  # Только зумы с достаточным количеством тайлов
+                box_data.append(sizes)
+                box_labels.append(f'Z{zoom}\n(n={len(sizes):,})')
+
+        # Создаем box plot с логарифмической шкалой
+        box = ax3.boxplot(box_data, labels=box_labels, showfliers=False, patch_artist=True)
+
+        # Раскрашиваем box'ы
+        colors = plt.cm.viridis(np.linspace(0, 1, len(box_data)))
+        for patch, color in zip(box['boxes'], colors):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.7)
+
+        ax3.set_yscale('log')
+        ax3.set_ylabel('Размер тайла (байты, log scale)', fontsize=12)
+        ax3.set_xlabel('Уровень зума', fontsize=12)
+        ax3.set_title('Сравнение распределений размеров тайлов по зумам (без выбросов)', 
+                        fontsize=14, fontweight='bold')
+        ax3.grid(True, alpha=0.3, axis='y')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig('tile_sizes_boxplot_2.png', dpi=150, bbox_inches='tight')
+
     # 2) Сколько в среднем на тайл визитов в зависимости от зума
     print("\n=== Среднее количество визитов на тайл в зависимости от зума ===")
     
     # Группируем статистику по зумам
+
     visits_by_zoom = {}
     for stat in stats_info:
-        zoom = stat.z
-        if zoom not in visits_by_zoom:
-            visits_by_zoom[zoom] = []
-        visits_by_zoom[zoom].append(stat.visits)
+        zoom_id = stat.z
+
+        for zoom in range(zoom_id, 14):
+            if zoom not in visits_by_zoom:
+                visits_by_zoom[zoom] = []
+            visits_by_zoom[zoom].append(stat.visits)
     
     # Вычисляем средние значения
     avg_visits_by_zoom = {}

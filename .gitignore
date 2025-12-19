@@ -14,5 +14,6 @@
 
 # misc
 /**/*.out
+/py_utils/.venv
 .gitignore
 tilesets
