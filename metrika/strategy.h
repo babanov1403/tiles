@@ -16,11 +16,13 @@ protected:
     
     // @brief updates layout \sum stats[page] -> max, or at least tries to
     void update_layout(std::vector<IndexItem>& tiles) const;
+
+    auto update_layout_smart(std::vector<IndexItem>&& tiles, stats::Statistics*, double) const;
     
     // @brief util function, splits array on two by pred
     template <class Pred>
     std::pair<std::vector<libtiles::tileindex::IndexItem>, std::vector<libtiles::tileindex::IndexItem>>
-    split_by(const std::vector<IndexItem>&, Pred) const;
+    split_by(std::vector<IndexItem>&&, Pred) const;
 
     virtual ~IStrategy() = default;
 };
@@ -50,10 +52,18 @@ public:
 };
 
 // @brief
-// max capacity kRAMBound, we want max sum of visits, each tile costs tile.size
+// max capacity kRAMBound, we want max sum of visits * pages, each tile costs tile.size
 class KnapsackStrategy : public IStrategy {
 public:
     KnapsackStrategy() = default;
+
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
+};
+
+class SectorStrategy : public IStrategy {
+public:
+    SectorStrategy() = default;
 
     PageHandle build_handler(
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;

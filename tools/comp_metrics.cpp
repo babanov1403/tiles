@@ -31,6 +31,8 @@ int main(int argc, char* argv[]) {
     // std::string path_to_index = absl::GetFlag(FLAGS_PATH_INDEX);
     std::string path_to_index = "/home/yc-user/tiles/tilesets/data/2025-08-02-planet.index";
 
+    std::cout << "There are three places with RAM parameter to change...\n";
+
     stats::Statistics stats;
     for (std::size_t idx = 1; idx <= 1 /* 30 */; idx++) {
         auto day = std::to_string(idx);
@@ -56,8 +58,9 @@ int main(int argc, char* argv[]) {
     std::cout << tiles_size * 1. / kOriginSize * 16 * 1024ull * 1024 * 1024 << '\n';
     double ratio = tiles_size * 1. / kOriginSize;
 
-    output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
+    output_metrics<SectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
+    // output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
     output_metrics<GreedyStrategy>(&stats, &tiles, ratio, "GreedyStrategy");
-    output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
-    output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
+    // output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
+    // output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
 }

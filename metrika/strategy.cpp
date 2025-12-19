@@ -37,35 +37,153 @@ void IStrategy::update_layout(std::vector<IndexItem>& tiles) const {
         offset = offset_gl;
         offset_gl += size;
     }
-    // auto [small_tiles, big_tiles] = split_by(tiles, [](const IndexItem& item){
-    //     return item.size > PageHandle{}.get_page_size();
-    // });
-
-    // tiles = 
-
-    // implement algo... fuck
-
-    // std::vector<IndexItem> new_tiles;
-    // new_tiles.reserve(tiles.size());
 }
 
+auto IStrategy::update_layout_smart(std::vector<IndexItem>&& tiles, stats::Statistics* stats, double ratio) const {
+    std::cout << "starting..\n";
+    const std::size_t kInitSize = tiles.size();
 
+    std::size_t init_offset = 0;
+
+    for (auto item : tiles) {
+        init_offset += item.size;
+    }
+
+    std::cout << kInitSize << '\n';
+    constexpr std::size_t kMinVisits = 400;
+    constexpr std::size_t kPageSize = 4 * 1024;
+    const std::size_t kRAMBound = 16ull * 1024 * 1024 * 1024 * ratio;
+    auto [boring_tiles, interesting_tiles] = split_by(std::move(tiles), [stats, kMinVisits](IndexItem item){
+        return stats->get_visits_for(item.x, item.y, item.z) <= kMinVisits; 
+    });
+    std::cout << "Parts of array after splitting by visits:\n";
+    std::cout << "boring: " << boring_tiles.size() * 1. / kInitSize << " | interesting: " << interesting_tiles.size() * 1. / kInitSize << std::endl;
+
+    // we have pretty nice result here with greedy approach
+    std::ranges::sort(interesting_tiles, stats::StatsGreaterComparator(stats));
+    
+    std::vector<IndexItem> ram_tiles;
+    std::vector<IndexItem> external_tiles;
+
+    std::size_t size = 0;
+
+    for (auto item : interesting_tiles) {
+        if (size > kRAMBound) {
+            external_tiles.push_back(item);
+            continue;
+        }
+        size += item.size;
+        ram_tiles.push_back(item);
+    }
+
+    std::cout << "Tiles in RAM: " << ram_tiles.size() << ' ' << "Not in RAM: " << external_tiles.size() << '\n';
+
+    {
+        std::vector<IndexItem> empty;
+        std::swap(empty, interesting_tiles);
+    }
+
+    // now split external_tiles on big_tiles and small ones
+    auto [small_tiles, big_tiles] = split_by(std::move(external_tiles), [](IndexItem item){
+        return item.size < kPageSize;
+    });
+
+    std::ranges::sort(small_tiles, std::less<>{}, &IndexItem::size);
+    std::ranges::sort(big_tiles, std::less<>{}, &IndexItem::size);
+
+    // RAM | OTHER | POHUI
+    // in future try RAM | WARM | COLD | POHUI
+
+    std::size_t offset_gl = 0;
+    for (auto& tile : ram_tiles) {
+        tile.offset = offset_gl;
+        offset_gl += tile.size;
+    }
+
+    std::vector<IndexItem> result;
+    result.reserve(small_tiles.size() + big_tiles.size());
+    offset_gl += (kPageSize - offset_gl % kPageSize) % kPageSize;
+
+    // double avg_tiles_used_for_padding = 0;
+    std::size_t total_tiles_used_for_padding = 0;
+
+    for (auto tile : big_tiles) {
+        tile.offset = offset_gl;
+        offset_gl += tile.size;
+        result.push_back(tile);
+        if (offset_gl % kPageSize == 0) {
+            continue;
+        }
+
+        auto space_until_page_end = kPageSize - offset_gl % kPageSize;
+
+        std::size_t padding_tiles = 0;
+        while (!small_tiles.empty() && small_tiles.back().size <= space_until_page_end) {
+            padding_tiles++;
+            small_tiles.back().offset = offset_gl;
+            space_until_page_end -= small_tiles.back().size;
+            offset_gl += small_tiles.back().size;
+            result.push_back(small_tiles.back());
+            small_tiles.pop_back();
+        }
+        // avg_tiles_used_for_padding += padding_tiles;
+        total_tiles_used_for_padding += padding_tiles;
+        offset_gl += space_until_page_end;
+    }
+
+    std::cout << "Total tiles used for padding: " << total_tiles_used_for_padding << '\n';
+
+    for (auto tile : small_tiles) {
+        tile.offset = offset_gl;
+        offset_gl += tile.size;
+        result.push_back(tile);
+    }
+
+    std::cout << "We have " << small_tiles.size() << " left from filling empty spaces\n";
+    std::size_t sz = 0;
+    for (auto small : small_tiles) {
+        sz += small.size;
+    }
+    std::cout << "this will cause " << sz / 4. / 1024 << " more pages\n";
+
+    // now we have | ram_tiles | result | boring_tiles |
+    if (ram_tiles.size() + result.size() + boring_tiles.size() != kInitSize) {
+        std::cout << "Tiles size mismatch:\n";
+        std::cout << "expected: " << kInitSize << '\n';
+        std::cout << "got: " << ram_tiles.size() + result.size() + boring_tiles.size() << '\n';
+        exit(1);
+    }
+
+    // and now arrange boring_tiles
+    for (auto tile : boring_tiles) {
+        tile.offset = offset_gl;
+        offset_gl += tile.size;
+    }
+
+    // and concat all the tiles in one array
+    // now all the tiles lays in ram_tiles, but not every of them is in ram...
+    for (auto tile : result) {
+        ram_tiles.push_back(tile);
+    }
+
+    for (auto tile : boring_tiles) {
+        ram_tiles.push_back(tile);
+    }
+
+    std::cout << "We used additional " << (offset_gl - init_offset) / 1024. / 1024. << " megabytes :)\n";
+
+    return ram_tiles;
+}
+
+// if pred(x) == true, it will be in small_tiles
 template <class Pred>
 std::pair<std::vector<libtiles::tileindex::IndexItem>, std::vector<libtiles::tileindex::IndexItem>>
-IStrategy::split_by(const std::vector<IndexItem>& tiles, Pred pred) const {
-    std::vector<IndexItem> small_tiles;
-    std::vector<IndexItem> big_tiles = tiles;
+IStrategy::split_by(std::vector<IndexItem>&& tiles, Pred pred) const {
     // [begin; middle) > 4 * 1024, [middle; end) <= 4 * 1024
-    auto middle = std::partition(big_tiles.begin(), big_tiles.end(), pred);
-    auto iter = big_tiles.end() - 1;
-    while (iter != middle) {
-        small_tiles.push_back(*iter);
-        big_tiles.pop_back();
-        --iter;
-    }
-    small_tiles.push_back(*iter);
-    big_tiles.pop_back();
-
+    auto middle = std::partition(tiles.begin(), tiles.end(), pred);
+    std::cout << "middle is: " << std::distance(tiles.begin(), middle) << '\n'; 
+    std::vector<IndexItem> small_tiles(tiles.begin(), middle);
+    std::vector<IndexItem> big_tiles(middle, tiles.end());
     return {small_tiles, big_tiles};
 }
 
@@ -150,7 +268,6 @@ PageHandle KnapsackStrategy::build_handler(
         }
     }
 
-
     std::cout << "Using dp we packed " << dp.back().back() << " visits and ";
 
     std::set<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t, std::uint64_t, std::uint64_t>> top_tiles;
@@ -208,6 +325,15 @@ PageHandle GreedyScaledStrategy::build_handler(
     auto& tiles = tile_info->get_items_mutable();
     std::ranges::sort(tiles, stats::StatsGreaterScaledComparator(stats));
     update_layout(tiles);
+
+    return build_handler_from_tiles(tiles, stats, ratio);
+}
+
+PageHandle SectorStrategy::build_handler(
+    stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const {
+    
+    auto& tiles = tile_info->get_items_mutable();
+    tiles = update_layout_smart(std::move(tiles), stats, ratio);
 
     return build_handler_from_tiles(tiles, stats, ratio);
 }
