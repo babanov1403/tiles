@@ -22,7 +22,8 @@ void output_metrics(stats::Statistics* stats, stats::TileHandle* tiles, double r
     Metrika metrika(stats, tiles, &handler);
     std::cout << "Paged metric is: " << metrika.compute() << " Mb/s" << '\n';
     std::cout << "Unpaged metric is: " << metrika.compute_unpaged() << " Mb/s" << '\n';
-    std::cout << "Average stats on page is: " << metrika.compute_sum_among_pages();
+    // std::cout << "Average stats on page is: " << metrika.compute_sum_among_pages() << '\n';
+    std::cout << "Ideal metric is: " << metrika.compute_ideal() << " Mb/s" << '\n';
     std::cout << "\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n";
 }
 
@@ -55,8 +56,8 @@ int main(int argc, char* argv[]) {
     std::cout << tiles_size * 1. / kOriginSize * 16 * 1024ull * 1024 * 1024 << '\n';
     double ratio = tiles_size * 1. / kOriginSize;
 
-    // output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
+    output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
     output_metrics<GreedyStrategy>(&stats, &tiles, ratio, "GreedyStrategy");
     output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
-    output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RofloStrategy");
+    output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
 }

@@ -132,6 +132,7 @@ PageHandle GreedyStrategy::build_handler(
 
 PageHandle KnapsackStrategy::build_handler(
     stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const {
+    const std::size_t kPageSize = 4 * 1024;
     const std::size_t kRAMBound = 16ull * 1024 * 1024 * 1024 * ratio;
     const std::size_t kTilesCnt = tile_info->get_items().size();
     auto& tiles = tile_info->get_items_mutable();
@@ -142,7 +143,7 @@ PageHandle KnapsackStrategy::build_handler(
     for (std::size_t k = 1; k <= kTilesCnt; k++) {
         for (std::size_t s = 1; s <= kRAMBound; s++) {
             if (s >= tiles[k].size) {
-                dp[k][s] = std::max(dp[k - 1][s], dp[k - 1][s - tiles[k].size] + stats->get_visits_for(tiles[k].x, tiles[k].y, tiles[k].z));     
+                dp[k][s] = std::max(dp[k - 1][s], dp[k - 1][s - tiles[k].size] + stats->get_visits_for(tiles[k].x, tiles[k].y, tiles[k].z) * (tiles[k].size + tiles[k].size - 1) / kPageSize);     
             } else {
                 dp[k][s] = dp[k - 1][s];
             }

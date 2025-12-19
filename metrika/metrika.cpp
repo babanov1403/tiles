@@ -61,3 +61,26 @@ double Metrika::compute_unpaged() const {
     raw_metr *= kRPSBound; 
     return raw_metr;
 }
+
+double Metrika::compute_ideal() const {
+    std::size_t expected_fair_lookup_bytes = 0;
+    for (auto [x, y, z, size, offset] : tile_info_->get_items()) {
+        offset = handler_->align(offset);
+        std::size_t uncached_bytes = 0;
+        for (std::size_t page_addr = offset; page_addr < offset + size; page_addr += handler_->get_page_size()) {
+            if (!handler_->is_prioritized(page_addr)) {
+                uncached_bytes += (size + size - 1) / handler_->get_page_size();
+            }
+        }
+        expected_fair_lookup_bytes += stats_->get_visits_for(x, y, z) * uncached_bytes;
+    }
+
+    std::size_t total_visits = stats_->get_total_visits();
+    double raw_metr = expected_fair_lookup_bytes * 1. / total_visits; // average bytes
+    // average megabytes, if we have this speed we process each
+    // request in one sec on average
+    raw_metr /= 1024 * 1024; 
+    // we this speed we can process 50'000 requests on average
+    raw_metr *= kRPSBound; 
+    return raw_metr;
+}

@@ -32,7 +32,6 @@ std::vector<LogParser::ParseResult> LogParser::parse() {
     std::vector<LogParser::ParseResult> result(fileSize / sizeof(LogParser::ParseResult));
     stream_.seekg(0);
     stream_.read(reinterpret_cast<char*>(result.data()), result.size() * sizeof(LogParser::ParseResult));
-    std::cout << "asadsd " << result.size() << '\n' ;
     return result;
 }
 
