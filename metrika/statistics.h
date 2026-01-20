@@ -25,7 +25,7 @@ struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
 
 namespace stats {
 
-static std::size_t kMaxZoom = 11;
+static std::size_t kMaxZoom = 8;
 
 using libtiles::tileindex::IndexItem;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;
@@ -95,6 +95,7 @@ public:
     // @babanov1403 TODO: get rid of setters/getters
     const std::vector<IndexItem>& get_items() const;
     std::vector<IndexItem>& get_items_mutable();
+    std::vector<IndexItem> get_items_copy() const;
     std::span<const IndexItem> get_first(std::size_t k = 10) const;
 
 private:

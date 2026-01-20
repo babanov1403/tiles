@@ -17,7 +17,8 @@ protected:
     // @brief updates layout \sum stats[page] -> max, or at least tries to
     void update_layout(std::vector<IndexItem>& tiles) const;
 
-    auto update_layout_smart(std::vector<IndexItem>&& tiles, stats::Statistics*, double) const;
+    auto update_layout_smart(std::vector<IndexItem>& tiles, stats::Statistics*, double, std::size_t) const;
+    auto update_layout_smart_decompose(std::vector<IndexItem>&, stats::Statistics*, double, std::size_t) const;
     
     // @brief util function, splits array on two by pred
     template <class Pred>
@@ -61,12 +62,14 @@ public:
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };
 
-class SectorStrategy : public IStrategy {
+class GreedySectorStrategy : public IStrategy {
 public:
-    SectorStrategy() = default;
+    GreedySectorStrategy() = default;
 
     PageHandle build_handler(
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
+    
+    std::size_t compute_min_visits(std::vector<IndexItem>, stats::Statistics*) const;
 };
 
 class RofloStrategy : public IStrategy {

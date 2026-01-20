@@ -14,12 +14,13 @@
 // ratio is 5e-4
 
 template <class S>
-void output_metrics(stats::Statistics* stats, stats::TileHandle* tiles, double ratio, std::string strategy_name) {
+void output_metrics(stats::Statistics* stats, stats::TileHandle* tiles_original, double ratio, std::string strategy_name) {
+    auto tiles = *tiles_original;
     std::cout << "\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n";
     std::cout << "Running strategy for " << strategy_name << '\n';
     S strategy;
-    PageHandle handler = strategy.build_handler(stats, tiles, ratio);
-    Metrika metrika(stats, tiles, &handler);
+    PageHandle handler = strategy.build_handler(stats, &tiles, ratio);
+    Metrika metrika(stats, &tiles, &handler);
     std::cout << "Paged metric is: " << metrika.compute() << " Mb/s" << '\n';
     std::cout << "Unpaged metric is: " << metrika.compute_unpaged() << " Mb/s" << '\n';
     // std::cout << "Average stats on page is: " << metrika.compute_sum_among_pages() << '\n';
@@ -58,11 +59,11 @@ int main(int argc, char* argv[]) {
     std::cout << tiles_size * 1. / kOriginSize * 16 * 1024ull * 1024 * 1024 << '\n';
     double ratio = tiles_size * 1. / kOriginSize;
 
-    output_metrics<SectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
+    output_metrics<GreedySectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
     // output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
     output_metrics<GreedyStrategy>(&stats, &tiles, ratio, "GreedyStrategy");
-    output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
-    output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
+    // output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
+    // output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
     /*
         1) implement silly approach without any reaarange and compare it with greedy
         2) 

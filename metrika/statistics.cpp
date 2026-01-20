@@ -81,6 +81,10 @@ std::vector<IndexItem>& TileHandle::get_items_mutable() {
     return items_;
 }
 
+std::vector<IndexItem> TileHandle::get_items_copy() const {
+    return items_;
+}
+
 std::span<const IndexItem> TileHandle::get_first(std::size_t k) const {
     return std::span(items_.begin(), items_.begin() + k);
 }

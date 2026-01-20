@@ -5,6 +5,7 @@
 #include <set>
 #include <cassert>
 #include <random>
+#include <ranges>
 
 PageHandle IStrategy::build_handler_from_tiles(const std::vector<IndexItem>& tiles, double ratio) const {
     PageHandle handler;
@@ -39,7 +40,20 @@ void IStrategy::update_layout(std::vector<IndexItem>& tiles) const {
     }
 }
 
-auto IStrategy::update_layout_smart(std::vector<IndexItem>&& tiles, stats::Statistics* stats, double ratio) const {
+auto IStrategy::update_layout_smart_decompose(std::vector<IndexItem>& tiles, stats::Statistics* stats, double ratio, std::size_t min_visits) const {
+    const std::size_t kInitSize = tiles.size();
+    std::size_t init_offset = 0;
+    for (auto item : tiles) {
+        init_offset += item.size;
+    }
+
+    constexpr std::size_t kPageSize = 4 * 1024;
+    const std::size_t kRAMBound = 16ull * 1024 * 1024 * 1024 * ratio;
+
+
+}
+
+auto IStrategy::update_layout_smart(std::vector<IndexItem>& tiles, stats::Statistics* stats, double ratio, std::size_t min_visits) const {
     std::cout << "starting..\n";
     const std::size_t kInitSize = tiles.size();
 
@@ -49,12 +63,10 @@ auto IStrategy::update_layout_smart(std::vector<IndexItem>&& tiles, stats::Stati
         init_offset += item.size;
     }
 
-    std::cout << kInitSize << '\n';
-    constexpr std::size_t kMinVisits = 400;
     constexpr std::size_t kPageSize = 4 * 1024;
     const std::size_t kRAMBound = 16ull * 1024 * 1024 * 1024 * ratio;
-    auto [boring_tiles, interesting_tiles] = split_by(std::move(tiles), [stats, kMinVisits](IndexItem item){
-        return stats->get_visits_for(item.x, item.y, item.z) <= kMinVisits; 
+    auto [boring_tiles, interesting_tiles] = split_by(std::move(tiles), [stats, min_visits](IndexItem item){
+        return stats->get_visits_for(item.x, item.y, item.z) <= min_visits; 
     });
     std::cout << "Parts of array after splitting by visits:\n";
     std::cout << "boring: " << boring_tiles.size() * 1. / kInitSize << " | interesting: " << interesting_tiles.size() * 1. / kInitSize << std::endl;
@@ -66,7 +78,6 @@ auto IStrategy::update_layout_smart(std::vector<IndexItem>&& tiles, stats::Stati
     std::vector<IndexItem> external_tiles;
 
     std::size_t size = 0;
-
     for (auto item : interesting_tiles) {
         if (size > kRAMBound) {
             external_tiles.push_back(item);
@@ -329,13 +340,42 @@ PageHandle GreedyScaledStrategy::build_handler(
     return build_handler_from_tiles(tiles, stats, ratio);
 }
 
-PageHandle SectorStrategy::build_handler(
+PageHandle GreedySectorStrategy::build_handler(
     stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const {
-    
     auto& tiles = tile_info->get_items_mutable();
-    tiles = update_layout_smart(std::move(tiles), stats, ratio);
+    auto min_visits = compute_min_visits(tiles, stats);
+    std::cout << "min visits: " << min_visits << '\n';
+    update_layout_smart(tiles, stats, ratio, min_visits);
+
+    // std::ranges::sort(next_tiles, [](const auto& lhs, const auto& rhs) {
+    //     return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
+    // });
+
+    // std::ranges::sort(tiles, [](const auto& lhs, const auto& rhs) {
+    //     return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
+    // });
+
+    // for (auto [lhs, rhs] : std::ranges::views::zip(next_tiles, tiles)) {
+    //     if (std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) != std::tuple(rhs.x, rhs.y, rhs.z, rhs.size)) {
+    //         std::cout << lhs.x << " " << lhs.y << " " << lhs.z << " " << lhs.size << '\n';
+    //         std::cout << rhs.x << " " << rhs.y << " " << rhs.z << " " << rhs.size << '\n';
+    //         std::cout << "ALL BAD CAPTAIN!!";
+    //         exit(1);
+    //     }
+    // }
 
     return build_handler_from_tiles(tiles, stats, ratio);
+}
+
+std::size_t GreedySectorStrategy::compute_min_visits(std::vector<IndexItem> tiles, stats::Statistics* stats) const {
+    std::size_t percentile_pos = 0.5 * tiles.size();
+    std::cout << "percentile_pos: " << percentile_pos << '\n';
+    std::nth_element(tiles.begin(), tiles.begin() + percentile_pos, tiles.end(), [stats](const auto& lhs, const auto& rhs) {
+        return stats->get_visits_for(lhs.x, lhs.y, lhs.z) < stats->get_visits_for(rhs.x, rhs.y, rhs.z);
+    });
+    auto [x, y, z, size, offset] = *(tiles.begin() + percentile_pos);
+
+    return stats->get_visits_for(x, y, z);
 }
 
 PageHandle RofloStrategy::build_handler(

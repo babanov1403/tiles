@@ -116,6 +116,8 @@ if __name__ == "__main__":
 
         # Создаем графики
         # Вариант 1: Общий график для всех зумов (в логарифмическом масштабе)
+
+        """
         print("\nСоздание общего графика распределения размеров тайлов...")
         fig1, ax1 = plt.subplots(figsize=(14, 8))
 
@@ -137,7 +139,10 @@ if __name__ == "__main__":
         ax1.legend()
         plt.tight_layout()
         plt.savefig('tile_sizes_all_zooms_2.png', dpi=150, bbox_inches='tight')
+        """
 
+
+        """
         # Вариант 2: Отдельные графики для каждого зума
         print("\nСоздание отдельных графиков для каждого зума...")
 
@@ -181,7 +186,10 @@ if __name__ == "__main__":
         plt.suptitle('Распределение размеров тайлов по зумам', fontsize=16, fontweight='bold', y=1.02)
         plt.tight_layout()
         plt.savefig('tile_sizes_by_zoom_2.png', dpi=150, bbox_inches='tight')
+        """
 
+
+        """
         # Вариант 3: Box plot для сравнения распределений по зумам
         print("\nСоздание Box plot для сравнения распределений...")
         fig3, ax3 = plt.subplots(figsize=(14, 8))
@@ -213,6 +221,7 @@ if __name__ == "__main__":
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.savefig('tile_sizes_boxplot_2.png', dpi=150, bbox_inches='tight')
+        """
 
     # 2) Сколько в среднем на тайл визитов в зависимости от зума
     print("\n=== Среднее количество визитов на тайл в зависимости от зума ===")
@@ -232,13 +241,14 @@ if __name__ == "__main__":
     avg_visits_by_zoom = {}
     for zoom in sorted(visits_by_zoom.keys()):
         visits = visits_by_zoom[zoom]
-        avg_visits_by_zoom[zoom] = np.mean(visits)
+        # Вот здесь менять перцинтиль
+        avg_visits_by_zoom[zoom] = np.percentile(visits, 25)
         print(f"Zoom {zoom}: {len(visits)} тайлов, "
-              f"среднее визитов: {avg_visits_by_zoom[zoom]:.2f}, "
+              f"25-ый перцинтиль визитов: {avg_visits_by_zoom[zoom]:.2f}, "
               f"медиана: {np.median(visits):.2f}")
     
     # Создаем график средних визитов по зумам
-    print("\nСоздание графика средних визитов по зумам...")
+    print("\nСоздание графика 25-ый перцинтилей визитов по зумам...")
     fig4, (ax4a, ax4b) = plt.subplots(1, 2, figsize=(16, 6))
     
     # График 1: Среднее количество визитов
@@ -247,8 +257,8 @@ if __name__ == "__main__":
     
     bars = ax4a.bar(zooms, avg_visits, color='coral', edgecolor='darkred', alpha=0.7)
     ax4a.set_xlabel('Уровень зума', fontsize=12)
-    ax4a.set_ylabel('Среднее количество визитов', fontsize=12)
-    ax4a.set_title('Среднее количество визитов на тайл по зумам', fontsize=14, fontweight='bold')
+    ax4a.set_ylabel('25-ый перцинтиль визитов', fontsize=12)
+    ax4a.set_title('25-ый перцинтиль визитов на тайл по зумам', fontsize=14, fontweight='bold')
     ax4a.grid(True, alpha=0.3, axis='y')
     
     # Добавляем значения на столбцы
@@ -272,21 +282,22 @@ if __name__ == "__main__":
     ax4b.grid(True, alpha=0.3, axis='y')
     
     plt.tight_layout()
-    plt.savefig('visits_by_zoom_2.png', dpi=150, bbox_inches='tight')
+    plt.savefig('visits_by_zoom_3.png', dpi=150, bbox_inches='tight')
     
     # Выводим сводную статистику
-    print("\n=== СВОДНАЯ СТАТИСТИКА ===")
-    print(f"Всего тайлов в индексе: {len(tile_info):,}")
-    print(f"Всего тайлов в статистике: {len(stats_info):,}")
     
-    total_size_gb = sum(tile.size for tile in tile_info) / (1024**3)
-    print(f"Общий размер всех тайлов: {total_size_gb:.2f} GB")
+    # print("\n=== СВОДНАЯ СТАТИСТИКА ===")
+    # print(f"Всего тайлов в индексе: {len(tile_info):,}")
+    # print(f"Всего тайлов в статистике: {len(stats_info):,}")
     
-    print(f"\nГрафики сохранены как:")
-    print("1. tile_sizes_all_zooms.png - общее распределение размеров")
-    print("2. tile_sizes_by_zoom.png - распределение по зумам")
-    print("3. tile_sizes_boxplot.png - сравнение распределений (box plot)")
-    print("4. visits_by_zoom.png - статистика визитов по зумам")
+    # total_size_gb = sum(tile.size for tile in tile_info) / (1024**3)
+    # print(f"Общий размер всех тайлов: {total_size_gb:.2f} GB")
+    
+    # print(f"\nГрафики сохранены как:")
+    # print("1. tile_sizes_all_zooms.png - общее распределение размеров")
+    # print("2. tile_sizes_by_zoom.png - распределение по зумам")
+    # print("3. tile_sizes_boxplot.png - сравнение распределений (box plot)")
+    # print("4. visits_by_zoom.png - статистика визитов по зумам")
     
     # Показываем все графики
     plt.show()
