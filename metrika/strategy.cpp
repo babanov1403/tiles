@@ -53,7 +53,19 @@ auto IStrategy::update_layout_smart_decompose(std::vector<IndexItem>& tiles, sta
 
 }
 
-auto IStrategy::update_layout_smart(std::vector<IndexItem>& tiles, stats::Statistics* stats, double ratio, std::size_t min_visits) const {
+std::size_t GreedySectorStrategy::compute_min_visits(std::vector<IndexItem> tiles, stats::Statistics* stats) const {
+    constexpr double kPercentile = 0.7;
+    std::size_t percentile_pos = kPercentile * tiles.size();
+    std::cout << "percentile_pos: " << percentile_pos << '\n';
+    std::nth_element(tiles.begin(), tiles.begin() + percentile_pos, tiles.end(), [stats](const auto& lhs, const auto& rhs) {
+        return stats->get_visits_for(lhs.x, lhs.y, lhs.z) < stats->get_visits_for(rhs.x, rhs.y, rhs.z);
+    });
+    auto [x, y, z, size, offset] = *(tiles.begin() + percentile_pos);
+
+    return stats->get_visits_for(x, y, z);
+}
+
+auto IStrategy::update_layout_smart(std::vector<IndexItem>&& tiles, stats::Statistics* stats, double ratio, std::size_t min_visits) const {
     std::cout << "starting..\n";
     const std::size_t kInitSize = tiles.size();
 
@@ -70,7 +82,7 @@ auto IStrategy::update_layout_smart(std::vector<IndexItem>& tiles, stats::Statis
     });
     std::cout << "Parts of array after splitting by visits:\n";
     std::cout << "boring: " << boring_tiles.size() * 1. / kInitSize << " | interesting: " << interesting_tiles.size() * 1. / kInitSize << std::endl;
-
+    std::cout << "boring: " << boring_tiles.size() << " | interesting: " << interesting_tiles.size() << std::endl;
     // we have pretty nice result here with greedy approach
     std::ranges::sort(interesting_tiles, stats::StatsGreaterComparator(stats));
     
@@ -101,7 +113,8 @@ auto IStrategy::update_layout_smart(std::vector<IndexItem>& tiles, stats::Statis
 
     std::ranges::sort(small_tiles, std::less<>{}, &IndexItem::size);
     std::ranges::sort(big_tiles, std::less<>{}, &IndexItem::size);
-
+    
+    std::cout << "small: " << small_tiles.size() << " | big: " << big_tiles.size() << std::endl;
     // RAM | OTHER | POHUI
     // in future try RAM | WARM | COLD | POHUI
 
@@ -344,38 +357,8 @@ PageHandle GreedySectorStrategy::build_handler(
     stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const {
     auto& tiles = tile_info->get_items_mutable();
     auto min_visits = compute_min_visits(tiles, stats);
-    std::cout << "min visits: " << min_visits << '\n';
-    update_layout_smart(tiles, stats, ratio, min_visits);
-
-    // std::ranges::sort(next_tiles, [](const auto& lhs, const auto& rhs) {
-    //     return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
-    // });
-
-    // std::ranges::sort(tiles, [](const auto& lhs, const auto& rhs) {
-    //     return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
-    // });
-
-    // for (auto [lhs, rhs] : std::ranges::views::zip(next_tiles, tiles)) {
-    //     if (std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) != std::tuple(rhs.x, rhs.y, rhs.z, rhs.size)) {
-    //         std::cout << lhs.x << " " << lhs.y << " " << lhs.z << " " << lhs.size << '\n';
-    //         std::cout << rhs.x << " " << rhs.y << " " << rhs.z << " " << rhs.size << '\n';
-    //         std::cout << "ALL BAD CAPTAIN!!";
-    //         exit(1);
-    //     }
-    // }
-
+    tiles = update_layout_smart(std::move(tiles), stats, ratio, min_visits);
     return build_handler_from_tiles(tiles, stats, ratio);
-}
-
-std::size_t GreedySectorStrategy::compute_min_visits(std::vector<IndexItem> tiles, stats::Statistics* stats) const {
-    std::size_t percentile_pos = 0.5 * tiles.size();
-    std::cout << "percentile_pos: " << percentile_pos << '\n';
-    std::nth_element(tiles.begin(), tiles.begin() + percentile_pos, tiles.end(), [stats](const auto& lhs, const auto& rhs) {
-        return stats->get_visits_for(lhs.x, lhs.y, lhs.z) < stats->get_visits_for(rhs.x, rhs.y, rhs.z);
-    });
-    auto [x, y, z, size, offset] = *(tiles.begin() + percentile_pos);
-
-    return stats->get_visits_for(x, y, z);
 }
 
 PageHandle RofloStrategy::build_handler(

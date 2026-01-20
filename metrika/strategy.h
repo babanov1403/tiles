@@ -4,6 +4,9 @@
 #include "page_handle.h"
 #include "statistics.h"
 
+#include <algorithm>
+#include <ranges>
+
 class IStrategy {
 public:
     virtual PageHandle build_handler(
@@ -17,13 +20,34 @@ protected:
     // @brief updates layout \sum stats[page] -> max, or at least tries to
     void update_layout(std::vector<IndexItem>& tiles) const;
 
-    auto update_layout_smart(std::vector<IndexItem>& tiles, stats::Statistics*, double, std::size_t) const;
+    auto update_layout_smart(std::vector<IndexItem>&& tiles, stats::Statistics*, double, std::size_t) const;
     auto update_layout_smart_decompose(std::vector<IndexItem>&, stats::Statistics*, double, std::size_t) const;
     
     // @brief util function, splits array on two by pred
     template <class Pred>
     std::pair<std::vector<libtiles::tileindex::IndexItem>, std::vector<libtiles::tileindex::IndexItem>>
     split_by(std::vector<IndexItem>&&, Pred) const;
+
+
+    static bool validate(std::vector<IndexItem> before, std::vector<IndexItem> after) {
+        std::ranges::sort(before, [](const auto& lhs, const auto& rhs) {
+            return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
+        });
+
+        std::ranges::sort(after, [](const auto& lhs, const auto& rhs) {
+            return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
+        });
+
+        for (auto [lhs, rhs] : std::ranges::views::zip(before, after)) {
+            if (std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) != std::tuple(rhs.x, rhs.y, rhs.z, rhs.size)) {
+                std::cout << lhs.x << " " << lhs.y << " " << lhs.z << " " << lhs.size << '\n';
+                std::cout << rhs.x << " " << rhs.y << " " << rhs.z << " " << rhs.size << '\n';
+                std::cout << "ALL BAD CAPTAIN!!";
+                return false;
+            }
+        }
+        return true;
+    }
 
     virtual ~IStrategy() = default;
 };
