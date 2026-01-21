@@ -30,6 +30,7 @@ protected:
 
 
     static bool validate(std::vector<IndexItem> before, std::vector<IndexItem> after) {
+        std::cout << "===============STARTING VALIDATION...===============\n";
         std::ranges::sort(before, [](const auto& lhs, const auto& rhs) {
             return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
         });
@@ -42,10 +43,13 @@ protected:
             if (std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) != std::tuple(rhs.x, rhs.y, rhs.z, rhs.size)) {
                 std::cout << lhs.x << " " << lhs.y << " " << lhs.z << " " << lhs.size << '\n';
                 std::cout << rhs.x << " " << rhs.y << " " << rhs.z << " " << rhs.size << '\n';
-                std::cout << "ALL BAD CAPTAIN!!";
+                std::cout << "=-=-=-=-=-=-=-=-= ALL BAD CAPTAIN! =-=-=-=-=-=-=-=-=\n";
+                exit(1);
                 return false;
             }
         }
+        std::cout << "=================VALIDATION PASSED!=================\n";
+
         return true;
     }
 
@@ -94,6 +98,22 @@ public:
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
     
     std::size_t compute_min_visits(std::vector<IndexItem>, stats::Statistics*) const;
+};
+
+class AlignStrategy : public IStrategy {
+public:
+    AlignStrategy() = default;
+
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
+};
+
+class MetricKnapsackStrategy : public IStrategy {
+public:
+    MetricKnapsackStrategy() = default;
+
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };
 
 class RofloStrategy : public IStrategy {

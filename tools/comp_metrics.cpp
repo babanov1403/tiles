@@ -48,18 +48,22 @@ int main(int argc, char* argv[]) {
     stats::TileHandle tiles;
     tiles.fill_from(path_to_index);
 
+    std::cout << tiles.get_items().size() << '\n';
+
     std::size_t tiles_size = 0;
     std::cout << "total tiles: " << tiles.get_items().size() << '\n';
     for (auto tile : tiles.get_items()) {
         tiles_size += tile.size;
     }
-    std::cout << "total size of tiles in bytes: " << tiles_size << '\n';
+    std::cout << "total size of tiles in megabytes: " << tiles_size / 1024. / 1024. << '\n';
     constexpr std::size_t kOriginSize = 101779385472;
 
     std::cout << tiles_size * 1. / kOriginSize * 16 * 1024ull * 1024 * 1024 << '\n';
     double ratio = tiles_size * 1. / kOriginSize;
 
-    output_metrics<GreedySectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
+    // output_metrics<MetricKnapsackStrategy>(&stats, &tiles, ratio, "MetricKnapsackStrategy");
+    // output_metrics<GreedySectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
+    // output_metrics<AlignStrategy>(&stats, &tiles, ratio, "AlignStategy");
     // output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
     output_metrics<GreedyStrategy>(&stats, &tiles, ratio, "GreedyStrategy");
     // output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");

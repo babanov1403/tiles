@@ -14,7 +14,7 @@ cc_library(
         "metrika/page_handle.h",
         "metrika/statistics.h"
     ],
-    copts = ["-std=c++23", "-O0"],
+    copts = ["-std=c++23", "-O3"],
     deps = ["@libtiles//:tileindex"],
     visibility = ["//visibility:public"],
 )
