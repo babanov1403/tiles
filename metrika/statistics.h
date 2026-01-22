@@ -25,7 +25,7 @@ struct std::hash<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>> {
 
 namespace stats {
 
-static std::size_t kMaxZoom = 5;
+static std::size_t kMaxZoom = 4;
 
 using libtiles::tileindex::IndexItem;
 using Tuple = std::tuple<std::uint32_t, std::uint32_t, std::uint32_t>;

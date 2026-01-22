@@ -312,8 +312,8 @@ PageHandle KnapsackStrategy::build_handler(
 
     for (std::size_t k = 1; k <= kTilesCnt; k++) {
         for (std::size_t s = 1; s <= kRAMBound; s++) {
-            if (s >= tiles[k].size) {
-                dp[k][s] = std::max(dp[k - 1][s], dp[k - 1][s - tiles[k].size] + stats->get_visits_for(tiles[k].x, tiles[k].y, tiles[k].z) * (tiles[k].size + kPageSize - 1) / kPageSize);     
+            if (s >= tiles[k - 1].size) {
+                dp[k][s] = std::max(dp[k - 1][s], dp[k - 1][s - tiles[k - 1].size] + stats->get_visits_for(tiles[k - 1].x, tiles[k - 1].y, tiles[k - 1].z) * (tiles[k - 1].size + kPageSize - 1) / kPageSize);     
             } else {
                 dp[k][s] = dp[k - 1][s];
             }
@@ -456,34 +456,77 @@ PageHandle MetricKnapsackStrategy::build_handler(
     const std::size_t kRAMBound = 16ull * 1024 * 1024 * 1024 * ratio;
     const std::size_t kTilesCnt = tile_info->get_items().size();
     constexpr std::size_t kRPSBound = 50'000;
-    const auto& tiles = tile_info->get_items();
+    // auto before = tile_info->get_items_copy();
+    auto& tiles = tile_info->get_items_mutable();
     std::cout << kRAMBound << " " << kTilesCnt << '\n';
 
     auto get_ideal_metric_proportion = [stats, kPageSize](IndexItem item) -> std::size_t {
         std::size_t uncached_bytes = (item.size + kPageSize - 1) / kPageSize;
         return stats->get_visits_for(item.x, item.y, item.z) * uncached_bytes * kPageSize;
     };
-    
-    std::vector<std::size_t> curr_dp(kRAMBound + 1, std::numeric_limits<std::size_t>::max());
-    std::vector<std::size_t> prev_dp(kRAMBound + 1, std::numeric_limits<std::size_t>::max());
+
+    std::vector<std::vector<std::size_t>> dp(kTilesCnt + 1, std::vector<std::size_t>(kRAMBound + 1, 0));
+
+    for (std::size_t k = 1; k <= kTilesCnt; k++) {
+        dp[k][0] = 0;
+    }
 
     for (std::size_t k = 1; k <= kTilesCnt; k++) {
         for (std::size_t s = 1; s <= kRAMBound; s++) {
-            if (s >= tiles[k].size) {
-                curr_dp[s] = std::min(prev_dp[s] + get_ideal_metric_proportion(tiles[k]), prev_dp[s - tiles[k].size]);     
+            if (s >= tiles[k - 1].size) {
+                dp[k][s] = std::min(dp[k - 1][s] + get_ideal_metric_proportion(tiles[k - 1]), dp[k - 1][s - tiles[k - 1].size]);     
             } else {
-                curr_dp[s] = prev_dp[s] + get_ideal_metric_proportion(tiles[k]);
+                dp[k][s] = dp[k - 1][s] + get_ideal_metric_proportion(tiles[k - 1]);
             }
         }
-        std::swap(curr_dp, prev_dp);
     }
 
     std::size_t total_visits = stats->get_total_visits();
-    double raw_metr = prev_dp.back() * 1. / total_visits; // average bytes
+    double raw_metr = dp.back().back() * 1. / total_visits; // average bytes
     raw_metr /= 1024 * 1024; 
     raw_metr *= kRPSBound;
 
-    std::cout << raw_metr << '\n';
+    std::cout << "Using dp we got approximately " << raw_metr << " ideal metric value and packed";
+    std::set<std::tuple<std::uint32_t, std::uint32_t, std::uint32_t, std::uint64_t, std::uint64_t>> top_tiles;
 
-    return PageHandle{};
+    std::size_t k = kTilesCnt;
+    std::size_t s = kRAMBound;
+
+    while (dp[k][s] != 0) {
+        if (dp[k][s] == dp[k - 1][s - tiles[k - 1].size]) {
+            top_tiles.emplace(tiles[k].x, tiles[k].y, tiles[k].z, tiles[k].size, tiles[k].offset);
+            s -= tiles[k - 1].size;
+        }
+        k--;
+    }
+    std::cout << top_tiles.size() << " tiles!\n";
+    std::size_t result_v = 0;
+    std::size_t result_s = 0;
+
+    for (auto tile : top_tiles) {
+        result_v += stats->get_visits_for(std::get<0>(tile), std::get<1>(tile), std::get<2>(tile));
+        result_s += std::get<3>(tile);
+    }
+
+    auto middle = std::partition(tiles.begin(), tiles.end(), [&top_tiles](const IndexItem& item) {
+        return !top_tiles.contains(std::make_tuple(item.x, item.y, item.z, item.size, item.offset));
+    });
+
+    std::ranges::sort(tiles.begin(),middle, [stats_ = stats](const auto& lhs, const auto& rhs) {
+        return stats_->get_visits_for(lhs.x, lhs.y, lhs.z) > stats_->get_visits_for(rhs.x, rhs.y, rhs.z);
+    });
+
+    update_layout(tiles);
+    std::size_t size_after_sort = 0;
+    std::cout << "=-=-=-=-==-=-=-=-=-\n";
+    for (auto tile : tile_info->get_first(224)) {
+        std::cout << tile.x << " " << tile.y << " " << tile.z << " " << tile.size << " " << tile.offset << '\n';
+        size_after_sort += stats->get_visits_for(tile.x, tile.y, tile.z);
+    }
+    std::cout << size_after_sort << ' ' << dp.back().back() << '\n';
+    std::cout << "=-=-=-=-==-=-=-=-=-\n";
+    // validate(before, tiles);
+    return build_handler_from_tiles(tiles, stats, ratio);
 }
+
+
