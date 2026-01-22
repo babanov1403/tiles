@@ -7,16 +7,18 @@
 #include <algorithm>
 #include <ranges>
 
+using IndexItem = libtiles::tileindex::IndexItem;
+
+std::size_t compute_min_visits(std::vector<libtiles::tileindex::IndexItem>, stats::Statistics*);
+
 class IStrategy {
 public:
     virtual PageHandle build_handler(
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const = 0;
 
 protected:
-    using IndexItem = libtiles::tileindex::IndexItem;
-    virtual PageHandle build_handler_from_tiles(const std::vector<IndexItem>& tiles, double ratio) const;
     virtual PageHandle build_handler_from_tiles(const std::vector<IndexItem>& tiles, stats::Statistics* stats, double ratio) const;
-    
+
     // @brief updates layout \sum stats[page] -> max, or at least tries to
     void update_layout(std::vector<IndexItem>& tiles) const;
 
@@ -31,6 +33,11 @@ protected:
 
     static bool validate(std::vector<IndexItem> before, std::vector<IndexItem> after) {
         std::cout << "===============STARTING VALIDATION...===============\n";
+        if (before.size() != after.size()) {
+            std::cout << "=-=-=-=-=-=-=-=-= ALL BAD CAPTAIN! =-=-=-=-=-=-=-=-=\n";
+            exit(1);
+            return false;
+        }
         std::ranges::sort(before, [](const auto& lhs, const auto& rhs) {
             return std::tuple(lhs.x, lhs.y, lhs.z, lhs.size) < std::tuple(rhs.x, rhs.y, rhs.z, rhs.size);
         });
@@ -80,6 +87,14 @@ public:
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };
 
+class GreedySizedStrategy : public IStrategy {
+public:
+    GreedySizedStrategy() = default;
+
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
+};
+
 // @brief
 // max capacity kRAMBound, we want max sum of visits * pages, each tile costs tile.size
 class KnapsackStrategy : public IStrategy {
@@ -96,8 +111,6 @@ public:
 
     PageHandle build_handler(
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
-    
-    std::size_t compute_min_visits(std::vector<IndexItem>, stats::Statistics*) const;
 };
 
 class AlignStrategy : public IStrategy {
@@ -116,9 +129,20 @@ public:
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
 };
 
-class RofloStrategy : public IStrategy {
+class MetricKnapsackSplittingStrategy : public IStrategy {
 public:
-    RofloStrategy() = default;
+    MetricKnapsackSplittingStrategy() = default;
+
+    PageHandle build_handler(
+        stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;
+    
+private:
+    PageHandle build_handler_with_dp(stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const;
+};
+
+class GreedyNoReaarrangeStrategy : public IStrategy {
+public:
+    GreedyNoReaarrangeStrategy() = default;
 
     PageHandle build_handler(
         stats::Statistics* stats, stats::TileHandle* tile_info, double ratio) const override;

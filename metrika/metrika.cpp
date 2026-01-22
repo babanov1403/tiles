@@ -6,9 +6,11 @@ Metrika::Metrika(stats::Statistics* stats, stats::TileHandle* tile_info, PageHan
 double Metrika::compute() const {
     std::size_t expected_fair_lookup_bytes = 0;
     for (auto [x, y, z, size, offset] : tile_info_->get_items()) {
+        auto init_offset = offset;
         offset = handler_->align(offset);
+
         std::size_t uncached_bytes = 0;
-        for (std::size_t page_addr = offset; page_addr < offset + size; page_addr += handler_->get_page_size()) {
+        for (std::size_t page_addr = offset; page_addr < init_offset + size; page_addr += handler_->get_page_size()) {
             uncached_bytes += !handler_->is_prioritized(page_addr) * handler_->get_page_size();
         }
         expected_fair_lookup_bytes += stats_->get_visits_for(x, y, z) * uncached_bytes;
