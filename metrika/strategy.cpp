@@ -575,6 +575,7 @@ PageHandle MetricKnapsackStrategy::build_handler(
             bool was = handler.is_prioritized(offset);
             handler.include_page(offset);
             if (handler.check_memory_exceed()) {
+                handler.exclude_page(offset);
                 std::cout << "Total tiles included is " << tiles_counter << '\n';
                 std::cout << "Total bytes included is " << pages_counter * 4 * 1024 << '\n';
                 std::cout << "Total visits among tiles is " << visits_counter << '\n';
