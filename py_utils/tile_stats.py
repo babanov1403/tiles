@@ -221,6 +221,7 @@ if __name__ == "__main__":
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.savefig('tile_sizes_boxplot_2.png', dpi=150, bbox_inches='tight')
+
         """
 
     # 2) Сколько в среднем на тайл визитов в зависимости от зума

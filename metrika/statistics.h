@@ -81,7 +81,7 @@ public:
     // if [x,y,z] not present in map, it will make new key with value visits
     // else it will add value to existing element
     void fill_from(std::filesystem::path path);
-    std::size_t get_visits_for(std::uint32_t x, std::uint32_t y, std::uint32_t z) const;
+    std::size_t get_visits_for(std::uint32_t, std::uint32_t, std::uint32_t) const;
     std::size_t get_total_visits() const;
 
 private:
