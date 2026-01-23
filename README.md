@@ -13,7 +13,7 @@ bazel run @hedron_compile_commands//:refresh_all
 ```
 
 # Results
-
+```bash
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Running strategy for RandomStrategy
 Total tiles included is 46323081
@@ -97,3 +97,4 @@ Unpaged metric is: 39.5551 Mb/s
 Ideal metric is: 69.9072 Mb/s
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+```
