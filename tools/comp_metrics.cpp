@@ -61,13 +61,13 @@ int main(int argc, char* argv[]) {
     std::cout << tiles_size * 1. / kOriginSize * 16 * 1024ull * 1024 * 1024 << '\n';
     double ratio = tiles_size * 1. / kOriginSize;
 
-    output_metrics<MetricKnapsackStrategy>(&stats, &tiles, ratio, "MetricKnapsackStrategy");
+    output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
+    // output_metrics<MetricKnapsackStrategy>(&stats, &tiles, ratio, "MetricKnapsackStrategy");
     // output_metrics<MetricKnapsackSplittingStrategy>(&stats, &tiles, ratio, "MetricKnapsackSplittingStrategy");
-    // output_metrics<GreedySectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
-    // output_metrics<AlignStrategy>(&stats, &tiles, ratio, "AlignStategy");
+    output_metrics<GreedySectorStrategy>(&stats, &tiles, ratio, "SectorStrategy");
+    output_metrics<AlignStrategy>(&stats, &tiles, ratio, "AlignStategy");
     // output_metrics<KnapsackStrategy>(&stats, &tiles, ratio, "KnapsackStrategy");
     output_metrics<GreedyStrategy>(&stats, &tiles, ratio, "GreedyStrategy");
-    // output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
-    // output_metrics<RandomStrategy>(&stats, &tiles, ratio, "RandomStrategy");
+    output_metrics<GreedyScaledStrategy>(&stats, &tiles, ratio, "GreedyScaledStrategy");
     output_metrics<GreedyNoReaarrangeStrategy>(&stats, &tiles, ratio, "GreedyNoRearrangeStrategy");
 }
